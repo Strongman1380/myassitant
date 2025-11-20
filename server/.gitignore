@@ -1,0 +1,11 @@
+node_modules/
+.env
+*.log
+.DS_Store
+
+# Google Calendar credentials
+credentials.json
+token.json
+
+# Personal data
+memories.json
