@@ -90,40 +90,16 @@ After deployment, you need to add environment variables:
    - Click the three dots on the latest deployment
    - Click **Redeploy**
 
-## Step 4: Update API URL in Frontend
+## Step 4: Point the Frontend at the API
 
-After deployment, you'll get a URL like `https://myassistant.vercel.app`
+The frontend now uses a relative API URL by default, so if the frontend and backend are on the same domain (Vercel + `/api`), no code changes are needed.
 
-You need to update the API_URL in your frontend files to point to your production server:
+If your backend lives elsewhere (e.g., Railway/Render), set an env var in Vercel:
 
-1. Update `client/src/components/TextAssistant.tsx`:
-   ```typescript
-   const API_URL = 'https://your-app-name.vercel.app';
-   ```
+- Name: `VITE_API_URL`
+- Value: `https://your-backend-url` (no trailing slash)
 
-2. Update `client/src/components/EmailAssistant.tsx`:
-   ```typescript
-   const API_URL = 'https://your-app-name.vercel.app';
-   ```
-
-3. Update `client/src/components/CalendarAssistant.tsx`:
-   ```typescript
-   const API_URL = 'https://your-app-name.vercel.app';
-   ```
-
-4. Update `client/src/components/MemoryAssistant.tsx`:
-   ```typescript
-   const API_URL = 'https://your-app-name.vercel.app';
-   ```
-
-5. Commit and push:
-   ```bash
-   git add .
-   git commit -m "Update API URL for production"
-   git push origin main
-   ```
-
-Vercel will automatically redeploy with the new changes.
+Redeploy on Vercel after setting the variable.
 
 ## Step 5: Set Up Supabase (Memory Feature)
 
