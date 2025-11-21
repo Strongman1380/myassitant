@@ -35,3 +35,7 @@ server/credentials.json
 # Temporary files
 *.tmp
 *.temp
+
+# Vercel
+.vercel
+.vercel.json

@@ -41,6 +41,7 @@ export const TextAssistant: React.FC = () => {
     setLoading(true);
     setError('');
     setResult(null);
+    setCopied(false);
 
     try {
       const response = await fetch(`${API_URL}/api/ai/text`, {
@@ -57,6 +58,13 @@ export const TextAssistant: React.FC = () => {
 
       const data: TextResponse = await response.json();
       setResult(data);
+
+      // Automatically copy to clipboard
+      if (data.rewritten) {
+        await navigator.clipboard.writeText(data.rewritten);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 3000);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -69,6 +77,13 @@ export const TextAssistant: React.FC = () => {
       await navigator.clipboard.writeText(result.rewritten);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleSendToMessages = () => {
+    if (result?.rewritten) {
+      const smsUri = `sms:?body=${encodeURIComponent(result.rewritten)}`;
+      window.location.href = smsUri;
     }
   };
 
@@ -132,6 +147,12 @@ export const TextAssistant: React.FC = () => {
               onClick={handleCopy}
             >
               {copied ? '✓ Copied!' : 'Copy to Clipboard'}
+            </button>
+            <button
+              className="secondary-button"
+              onClick={handleSendToMessages}
+            >
+              Send to Messages
             </button>
           </div>
         </div>

@@ -36,25 +36,25 @@ function App() {
           className={`mode-button ${mode === 'text' ? 'active' : ''}`}
           onClick={() => setMode('text')}
         >
-          💬 Message
+          Message
         </button>
         <button
           className={`mode-button ${mode === 'email' ? 'active' : ''}`}
           onClick={() => setMode('email')}
         >
-          ✉️ Email
+          Email
         </button>
         <button
           className={`mode-button ${mode === 'calendar' ? 'active' : ''}`}
           onClick={() => setMode('calendar')}
         >
-          📅 Calendar
+          Calendar
         </button>
         <button
           className={`mode-button ${mode === 'memory' ? 'active' : ''}`}
           onClick={() => setMode('memory')}
         >
-          🧠 Memory
+          Memory
         </button>
       </div>
 

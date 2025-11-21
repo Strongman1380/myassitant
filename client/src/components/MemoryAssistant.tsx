@@ -68,14 +68,17 @@ export const MemoryAssistant: React.FC = () => {
         ? `${API_URL}/api/memory/list?category=${category}`
         : `${API_URL}/api/memory/list`;
 
+      console.log('🔍 Loading memories from:', url);
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error('Failed to load memories');
       }
       const data: MemoryListResponse = await response.json();
-      setMemories(data.memories);
+      console.log('✅ Memories loaded:', data);
+      console.log('📊 Setting memories state with', data.memories?.length || 0, 'items');
+      setMemories(data.memories || []);
     } catch (err) {
-      console.error('Error loading memories:', err);
+      console.error('❌ Error loading memories:', err);
     }
   };
 
@@ -177,6 +180,29 @@ export const MemoryAssistant: React.FC = () => {
       general: '📝'
     };
     return icons[category] || '📝';
+  };
+
+  const handleDeleteMemory = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this memory?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/api/memory/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete memory');
+      }
+
+      // Reload memories and categories after deletion
+      await loadMemories(selectedCategory);
+      await loadCategories();
+    } catch (err) {
+      console.error('Error deleting memory:', err);
+      setError('Failed to delete memory. Please try again.');
+    }
   };
 
   return (
@@ -325,11 +351,34 @@ export const MemoryAssistant: React.FC = () => {
           <div className="memory-list">
             {memories.map((memory) => (
               <div key={memory.id} className="memory-item" style={{ position: 'relative' }}>
+                <button
+                  onClick={() => handleDeleteMemory(memory.id)}
+                  style={{
+                    position: 'absolute',
+                    top: '8px',
+                    right: '8px',
+                    background: '#ef4444',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    padding: '4px 8px',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    opacity: 0.7,
+                    transition: 'opacity 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                  onMouseLeave={(e) => e.currentTarget.style.opacity = '0.7'}
+                  title="Delete this memory"
+                >
+                  Delete
+                </button>
                 <div style={{
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'flex-start',
-                  gap: '12px'
+                  gap: '12px',
+                  paddingRight: '70px'
                 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ marginBottom: '8px' }}>{memory.content}</div>
