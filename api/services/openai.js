@@ -1,9 +1,8 @@
 import OpenAI from 'openai';
 import fs from 'fs';
-import { config } from '../config/env.js';
 
 const openai = new OpenAI({
-  apiKey: config.openaiApiKey,
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 /**
