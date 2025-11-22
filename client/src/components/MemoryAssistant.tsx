@@ -152,6 +152,13 @@ export const MemoryAssistant: React.FC = () => {
     }
   };
 
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      handleAddMemory();
+    }
+  };
+
   const getImportanceColor = (level: string) => {
     switch (level) {
       case 'critical': return '#dc2626';
@@ -214,6 +221,7 @@ export const MemoryAssistant: React.FC = () => {
             placeholder="Speak or type something you want me to remember... (e.g., 'my favorite coffee is a vanilla latte', 'I work at Aspire Impact Network', 'therapy is every Tuesday at 2pm')"
             value={rawInput}
             onChange={(e) => setRawInput(e.target.value)}
+            onKeyDown={handleKeyDown}
             className={isRecording ? 'listening' : ''}
             disabled={isTranscribing}
           />
