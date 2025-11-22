@@ -1,8 +1,5 @@
-import dotenv from 'dotenv';
-
-dotenv.config();
-
+// Vercel serverless doesn't need dotenv - env vars are injected automatically
 export const config = {
-  port: process.env.PORT || 3001,
+  port: 3001,
   openaiApiKey: process.env.OPENAI_API_KEY || '',
 };
