@@ -4,6 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: '/',
   plugins: [
     react(),
     VitePWA({
@@ -45,6 +46,10 @@ export default defineConfig({
       }
     })
   ],
+  build: {
+    outDir: 'dist',
+    emptyOutDir: true
+  },
   server: {
     // Expose dev server to your local network so you can open it from your phone
     host: true,

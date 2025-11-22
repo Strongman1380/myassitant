@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { EmailResponse } from '../types';
 import { useAudioRecording } from '../hooks/useAudioRecording';
-
-const API_URL = 'http://localhost:3001';
+import { API_URL } from '../config';
 
 export const EmailAssistant: React.FC = () => {
   const [prompt, setPrompt] = useState('');

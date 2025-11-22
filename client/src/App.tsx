@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { AssistantMode } from './types';
 import { TextAssistant } from './components/TextAssistant';
 import { EmailAssistant } from './components/EmailAssistant';
@@ -26,35 +26,34 @@ function App() {
 
   return (
     <div className="app">
-      <div className="app-header">
-        <h1>AI Assistant</h1>
-        <p>Your personal assistant for a streamlined life</p>
-      </div>
-
       <div className="mode-selector">
         <button
           className={`mode-button ${mode === 'text' ? 'active' : ''}`}
           onClick={() => setMode('text')}
+          title="Message"
         >
-          Message
+          💬
         </button>
         <button
           className={`mode-button ${mode === 'email' ? 'active' : ''}`}
           onClick={() => setMode('email')}
+          title="Email"
         >
-          Email
+          ✉️
         </button>
         <button
           className={`mode-button ${mode === 'calendar' ? 'active' : ''}`}
           onClick={() => setMode('calendar')}
+          title="Calendar"
         >
-          Calendar
+          📅
         </button>
         <button
           className={`mode-button ${mode === 'memory' ? 'active' : ''}`}
           onClick={() => setMode('memory')}
+          title="Memory"
         >
-          Memory
+          🧠
         </button>
       </div>
 

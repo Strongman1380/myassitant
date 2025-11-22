@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAudioRecording } from '../hooks/useAudioRecording';
-
-const API_URL = 'http://localhost:3001';
+import { API_URL } from '../config';
 
 interface Memory {
   id: string;

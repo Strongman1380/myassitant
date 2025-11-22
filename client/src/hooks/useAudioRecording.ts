@@ -1,6 +1,5 @@
 import { useState, useRef } from 'react';
-
-const API_URL = 'http://localhost:3001';
+import { API_URL } from '../config';
 
 export const useAudioRecording = () => {
   const [isRecording, setIsRecording] = useState(false);

@@ -15,9 +15,28 @@ const TOKEN_PATH = path.join(__dirname, '../../token.json');
 const SCOPES = ['https://www.googleapis.com/auth/calendar'];
 
 /**
- * Get credentials from either web or installed format
+ * Get credentials from either environment variables or file
  */
 function getCredentials() {
+  // Check for environment variables first (for production deployment)
+  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    const baseUrl = process.env.BASE_URL || 'http://localhost:3001';
+    return {
+      client_id: process.env.GOOGLE_CLIENT_ID,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET,
+      redirect_uri: process.env.GOOGLE_REDIRECT_URI || `${baseUrl}/api/calendar/oauth-callback`
+    };
+  }
+
+  // Fall back to credentials.json file (for local development)
+  if (!fs.existsSync(CREDENTIALS_PATH)) {
+    throw new Error(
+      'Google Calendar credentials not configured. ' +
+      'Either set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables, ' +
+      'or create credentials.json file.'
+    );
+  }
+
   const credentials = JSON.parse(fs.readFileSync(CREDENTIALS_PATH, 'utf8'));
 
   // Support both 'web' and 'installed' credential formats
@@ -43,13 +62,6 @@ function getCredentials() {
  * Load or create OAuth2 client
  */
 async function authorize() {
-  // Check if credentials exist
-  if (!fs.existsSync(CREDENTIALS_PATH)) {
-    throw new Error(
-      'credentials.json not found! Please follow GOOGLE_CALENDAR_SETUP.md to set up Google Calendar API.'
-    );
-  }
-
   const { client_id, client_secret, redirect_uri } = getCredentials();
 
   const oAuth2Client = new google.auth.OAuth2(
@@ -58,7 +70,18 @@ async function authorize() {
     redirect_uri
   );
 
-  // Check if we have a token already
+  // Check for token from environment variable first (for production)
+  if (process.env.GOOGLE_TOKEN) {
+    try {
+      const token = JSON.parse(process.env.GOOGLE_TOKEN);
+      oAuth2Client.setCredentials(token);
+      return oAuth2Client;
+    } catch (error) {
+      console.error('Failed to parse GOOGLE_TOKEN from environment:', error);
+    }
+  }
+
+  // Check if we have a token file (for local development)
   if (fs.existsSync(TOKEN_PATH)) {
     const token = JSON.parse(fs.readFileSync(TOKEN_PATH, 'utf8'));
     oAuth2Client.setCredentials(token);
@@ -67,7 +90,7 @@ async function authorize() {
 
   // Need to get a new token
   throw new Error(
-    'No token.json found. Please run the authorization flow first. ' +
+    'No token found. Please run the authorization flow first. ' +
     'You can do this by making a calendar request - the app will guide you through authorization.'
   );
 }
@@ -76,10 +99,6 @@ async function authorize() {
  * Get authorization URL for first-time setup
  */
 export function getAuthUrl() {
-  if (!fs.existsSync(CREDENTIALS_PATH)) {
-    throw new Error('credentials.json not found!');
-  }
-
   const { client_id, client_secret, redirect_uri } = getCredentials();
 
   const oAuth2Client = new google.auth.OAuth2(
@@ -101,10 +120,6 @@ export function getAuthUrl() {
  * Save token after authorization
  */
 export function saveToken(code) {
-  if (!fs.existsSync(CREDENTIALS_PATH)) {
-    throw new Error('credentials.json not found!');
-  }
-
   const { client_id, client_secret, redirect_uri } = getCredentials();
 
   const oAuth2Client = new google.auth.OAuth2(
@@ -115,7 +130,19 @@ export function saveToken(code) {
 
   return oAuth2Client.getToken(code).then(({ tokens }) => {
     oAuth2Client.setCredentials(tokens);
-    fs.writeFileSync(TOKEN_PATH, JSON.stringify(tokens));
+
+    // Save to file if possible (local development)
+    try {
+      fs.writeFileSync(TOKEN_PATH, JSON.stringify(tokens));
+    } catch (error) {
+      console.warn('Unable to write token.json file (may be in production):', error.message);
+    }
+
+    // Log token so it can be added to environment variables
+    console.log('\n🔑 IMPORTANT: Save this token as GOOGLE_TOKEN environment variable:');
+    console.log(JSON.stringify(tokens));
+    console.log('\n');
+
     return oAuth2Client;
   });
 }
@@ -189,5 +216,11 @@ export async function createCalendarEvent(eventData) {
  * Check if Google Calendar is authorized
  */
 export function isAuthorized() {
-  return fs.existsSync(TOKEN_PATH) && fs.existsSync(CREDENTIALS_PATH);
+  // Check for environment variable token
+  if (process.env.GOOGLE_TOKEN && (process.env.GOOGLE_CLIENT_ID || fs.existsSync(CREDENTIALS_PATH))) {
+    return true;
+  }
+
+  // Check for file-based credentials (local development)
+  return fs.existsSync(TOKEN_PATH) && (fs.existsSync(CREDENTIALS_PATH) || process.env.GOOGLE_CLIENT_ID);
 }

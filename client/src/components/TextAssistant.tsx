@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { TextResponse } from '../types';
 import { useAudioRecording } from '../hooks/useAudioRecording';
-
-const API_URL = 'http://localhost:3001';
+import { API_URL } from '../config';
 
 export const TextAssistant: React.FC = () => {
   const [message, setMessage] = useState('');

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 
 interface SpeechRecognitionEvent {
   results: {
+    length: number;
     [index: number]: {
       [index: number]: {
         transcript: string;
