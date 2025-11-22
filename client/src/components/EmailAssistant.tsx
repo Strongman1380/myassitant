@@ -63,6 +63,13 @@ export const EmailAssistant: React.FC = () => {
     }
   };
 
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      handleSubmit();
+    }
+  };
+
   const handleCopy = async (field: 'subject' | 'body', text: string) => {
     await navigator.clipboard.writeText(text);
     setCopiedField(field);
@@ -92,6 +99,7 @@ export const EmailAssistant: React.FC = () => {
             placeholder="e.g., 'Email my boss, let him know I finished the report and ask him to review it'"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={handleKeyDown}
             className={isRecording ? 'listening' : ''}
             disabled={isTranscribing}
           />

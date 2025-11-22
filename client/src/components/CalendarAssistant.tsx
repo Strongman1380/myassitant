@@ -62,6 +62,14 @@ export const CalendarAssistant: React.FC = () => {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      handleSubmit();
+    }
+  };
+
   const formatDateTime = (isoString: string) => {
     const date = new Date(isoString);
     return date.toLocaleString('en-US', {
@@ -84,6 +92,7 @@ export const CalendarAssistant: React.FC = () => {
             placeholder="e.g., 'Schedule a meeting with John for tomorrow at 2pm to discuss the project'"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={handleKeyDown}
             className={isRecording ? 'listening' : ''}
             disabled={isTranscribing}
           />

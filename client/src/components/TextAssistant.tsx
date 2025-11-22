@@ -71,6 +71,13 @@ export const TextAssistant: React.FC = () => {
     }
   };
 
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      handleSubmit();
+    }
+  };
+
   const handleCopy = async () => {
     if (result?.rewritten) {
       await navigator.clipboard.writeText(result.rewritten);
@@ -96,6 +103,7 @@ export const TextAssistant: React.FC = () => {
             placeholder="Dictate or type your raw message here. For example: 'hey man, running late, probably like 15 min, sorry'"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={handleKeyDown}
             className={isRecording ? 'listening' : ''}
             disabled={isTranscribing}
           />
