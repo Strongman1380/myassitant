@@ -32,6 +32,10 @@ Thumbs.db
 server/token.json
 server/credentials.json
 
+# Google Drive credentials
+drive-credentials.json
+drive-token.json
+
 # Temporary files
 *.tmp
 *.temp

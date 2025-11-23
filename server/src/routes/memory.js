@@ -249,6 +249,39 @@ router.get('/tags', async (req, res) => {
   }
 });
 
+// POST /api/memory/search
+// Search memories by content (for client compatibility)
+router.post('/search', async (req, res) => {
+  try {
+    const { query } = req.body;
+
+    if (!query) {
+      return res.status(400).json({ error: 'Missing search query' });
+    }
+
+    const { data, error } = await supabase
+      .from('memories')
+      .select('*')
+      .eq('is_active', true)
+      .ilike('content', `%${query}%`);
+
+    if (error) {
+      console.error('Supabase error:', error);
+      throw new Error('Failed to search memories');
+    }
+
+    res.json({
+      results: data,
+      count: data.length,
+      query: query,
+      explanation: `Found ${data.length} memories matching "${query}"`
+    });
+  } catch (error) {
+    console.error('Error in /api/memory/search:', error);
+    res.status(500).json({ error: error.message || 'Internal server error' });
+  }
+});
+
 // GET /api/memory/search?q=keyword
 // Search memories by content
 router.get('/search', async (req, res) => {
