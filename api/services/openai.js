@@ -10,6 +10,7 @@ const openai = new OpenAI({
  */
 export async function callOpenAI(systemPrompt, userMessage) {
   try {
+    console.log('Calling OpenAI with key:', process.env.OPENAI_API_KEY?.substring(0, 20));
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
@@ -22,7 +23,10 @@ export async function callOpenAI(systemPrompt, userMessage) {
     return completion.choices[0].message.content;
   } catch (error) {
     console.error('OpenAI API Error:', error);
-    throw new Error('Failed to communicate with AI');
+    console.error('Error status:', error?.status);
+    console.error('Error message:', error?.message);
+    console.error('Error type:', error?.type);
+    throw new Error(`OpenAI API Error: ${error?.message || error?.status || 'Unknown error'}`);
   }
 }
 
@@ -45,7 +49,9 @@ export async function callOpenAIForJSON(systemPrompt, userMessage) {
     return JSON.parse(content);
   } catch (error) {
     console.error('OpenAI API Error:', error);
-    throw new Error('Failed to communicate with AI');
+    console.error('Error status:', error?.status);
+    console.error('Error message:', error?.message);
+    throw new Error(`OpenAI API Error: ${error?.message || error?.status || 'Unknown error'}`);
   }
 }
 
