@@ -1,5 +1,3 @@
-import fs from 'fs';
-
 /**
  * Call OpenAI GPT-4o-mini with a system prompt and user message
  */
@@ -73,16 +71,35 @@ export async function callOpenAIForJSON(systemPrompt, userMessage) {
 
 /**
  * Call OpenAI Whisper for audio transcription
+ * Note: This function requires form-data package for file uploads
  */
 export async function callWhisper(audioFilePath) {
   try {
-    const transcription = await openai.audio.transcriptions.create({
-      file: fs.createReadStream(audioFilePath),
-      model: 'whisper-1',
-      language: 'en',
+    // Import form-data dynamically to avoid issues if not needed
+    const FormData = (await import('form-data')).default;
+    const fs = (await import('fs')).default;
+
+    const formData = new FormData();
+    formData.append('file', fs.createReadStream(audioFilePath));
+    formData.append('model', 'whisper-1');
+    formData.append('language', 'en');
+
+    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        ...formData.getHeaders()
+      },
+      body: formData
     });
 
-    return transcription.text;
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`Whisper API Error: ${errorData.error?.message || response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.text;
   } catch (error) {
     console.error('Whisper API Error:', error);
     throw new Error('Failed to transcribe audio');
