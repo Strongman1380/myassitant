@@ -34,7 +34,6 @@ export const useAudioRecording = () => {
       recognition.lang = 'en-US';
 
       transcriptRef.current = '';
-      let hasReceivedResults = false;
 
       recognition.onstart = () => {
         setIsRecording(true);
@@ -42,7 +41,6 @@ export const useAudioRecording = () => {
       };
 
       recognition.onresult = (event: any) => {
-        hasReceivedResults = true;
         let interimTranscript = '';
         let finalTranscript = '';
 
