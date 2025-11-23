@@ -1,4 +1,5 @@
 import { callOpenAIForJSON } from '../services/openai.js';
+import { supabase } from '../config/supabase.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -12,7 +13,28 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing prompt' });
     }
 
-    const systemPrompt = `You are an email writing assistant for Brandon Hinrichs. Based on the user's description, generate a complete, well-formatted email with a personal, genuine touch.
+    // Fetch relevant memories from Supabase
+    let memoryContext = '';
+    try {
+      const { data: memories } = await supabase
+        .from('memories')
+        .select('content, category, importance_level')
+        .eq('is_active', true)
+        .order('importance_level', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (memories && memories.length > 0) {
+        memoryContext = '\n\nRELEVANT INFORMATION ABOUT BRANDON:\n' +
+          memories.map(m => `- ${m.content}`).join('\n') +
+          '\n\nUse this information to personalize the email when relevant. If the recipient is mentioned in the memories, use appropriate context.';
+      }
+    } catch (memError) {
+      console.warn('Could not fetch memories:', memError);
+      // Continue without memories if there's an error
+    }
+
+    const systemPrompt = `You are an email writing assistant for Brandon Hinrichs. Based on the user's description, generate a complete, well-formatted email with a personal, genuine touch.${memoryContext}
 
 Return your response as a JSON object with this exact format:
 {

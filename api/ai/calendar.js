@@ -1,4 +1,5 @@
 import { callOpenAIForJSON } from '../services/openai.js';
+import { supabase } from '../config/supabase.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -12,7 +13,27 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing prompt' });
     }
 
-    const systemPrompt = `You are a calendar event parser for a user in Central Time (America/Chicago timezone). Parse the user's natural language description into a structured calendar event.
+    // Fetch relevant memories from Supabase
+    let memoryContext = '';
+    try {
+      const { data: memories } = await supabase
+        .from('memories')
+        .select('content, category')
+        .eq('is_active', true)
+        .in('category', ['schedule', 'work', 'contact', 'routine', 'preference'])
+        .order('created_at', { ascending: false })
+        .limit(15);
+
+      if (memories && memories.length > 0) {
+        memoryContext = '\n\nRELEVANT CONTEXT ABOUT BRANDON:\n' +
+          memories.map(m => `- ${m.content}`).join('\n') +
+          '\n\nUse this context to make the event more detailed and accurate. If people, places, or routines are mentioned in memories, incorporate that context into the event title or notes.';
+      }
+    } catch (memError) {
+      console.warn('Could not fetch memories:', memError);
+    }
+
+    const systemPrompt = `You are a calendar event parser for Brandon Hinrichs in Central Time (America/Chicago timezone). Parse the user's natural language description into a structured calendar event.${memoryContext}
 
 Return your response as a JSON object with this exact format:
 {
