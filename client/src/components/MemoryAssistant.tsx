@@ -47,6 +47,10 @@ export const MemoryAssistant: React.FC = () => {
   } | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [categories, setCategories] = useState<Record<string, number>>({});
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Memory[] | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [searchExplanation, setSearchExplanation] = useState('');
 
   const {
     isRecording,
@@ -211,6 +215,46 @@ export const MemoryAssistant: React.FC = () => {
     }
   };
 
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) {
+      setSearchResults(null);
+      setSearchExplanation('');
+      return;
+    }
+
+    setSearching(true);
+    setError('');
+
+    try {
+      const response = await fetch(`${API_URL}/api/memory/search`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query: searchQuery }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Search failed');
+      }
+
+      const data = await response.json();
+      setSearchResults(data.results);
+      setSearchExplanation(data.explanation || '');
+    } catch (err) {
+      setError('Failed to search memories. Please try again.');
+      setSearchResults(null);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    setSearchResults(null);
+    setSearchExplanation('');
+  };
+
   return (
     <div>
       <div className="form-group">
@@ -315,6 +359,123 @@ export const MemoryAssistant: React.FC = () => {
           </div>
         </div>
       )}
+
+      <div className="result-container" style={{ marginTop: '30px' }}>
+        <h3>Search Memories</h3>
+        <div className="form-group">
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <input
+              type="text"
+              placeholder="Ask me anything... (e.g., 'what's my boss's name?', 'where do I work?', 'what are my hobbies?')"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleSearch();
+                }
+              }}
+              style={{
+                flex: 1,
+                padding: '12px',
+                borderRadius: '8px',
+                border: '1px solid var(--border-color)',
+                background: 'var(--background-light)',
+                color: 'var(--text-light)',
+                fontSize: '14px'
+              }}
+            />
+            <button
+              onClick={handleSearch}
+              disabled={searching || !searchQuery.trim()}
+              style={{
+                padding: '12px 24px',
+                borderRadius: '8px',
+                border: 'none',
+                background: 'var(--primary)',
+                color: 'white',
+                cursor: searching ? 'wait' : 'pointer',
+                fontSize: '14px',
+                fontWeight: '500'
+              }}
+            >
+              {searching ? 'Searching...' : 'Search'}
+            </button>
+            {searchResults !== null && (
+              <button
+                onClick={clearSearch}
+                style={{
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-color)',
+                  background: 'var(--background-light)',
+                  color: 'var(--text-light)',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+
+        {searchResults !== null && (
+          <div style={{ marginTop: '16px', marginBottom: '24px' }}>
+            <div style={{
+              padding: '12px',
+              background: 'var(--background-light)',
+              borderRadius: '8px',
+              borderLeft: '4px solid var(--primary)'
+            }}>
+              <div style={{ fontWeight: '500', marginBottom: '8px', color: 'var(--primary)' }}>
+                🔍 Search Results ({searchResults.length})
+              </div>
+              {searchExplanation && (
+                <div style={{ fontSize: '13px', color: 'var(--text-dark)', marginBottom: '8px' }}>
+                  {searchExplanation}
+                </div>
+              )}
+              {searchResults.length === 0 ? (
+                <div style={{ fontSize: '14px', color: 'var(--text-dark)' }}>
+                  No memories found matching your query.
+                </div>
+              ) : (
+                <div className="memory-list" style={{ marginTop: '12px' }}>
+                  {searchResults.map((memory) => (
+                    <div key={memory.id} className="memory-item">
+                      <div style={{ marginBottom: '8px' }}>{memory.content}</div>
+                      <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '6px',
+                        marginTop: '8px'
+                      }}>
+                        <span style={{
+                          padding: '3px 10px',
+                          backgroundColor: 'var(--primary)',
+                          borderRadius: '10px',
+                          fontSize: '12px',
+                          fontWeight: '500'
+                        }}>
+                          {getCategoryIcon(memory.category)} {memory.category}
+                        </span>
+                        {memory.tags && memory.tags.length > 0 && (
+                          <span style={{
+                            fontSize: '12px',
+                            color: 'var(--text-dark)'
+                          }}>
+                            🏷️ {memory.tags.join(', ')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className="result-container" style={{ marginTop: '30px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
