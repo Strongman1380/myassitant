@@ -10,7 +10,7 @@ declare global {
 
 export const useAudioRecording = () => {
   const [isRecording, setIsRecording] = useState(false);
-  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isTranscribing] = useState(false); // Not used with Speech Recognition, kept for compatibility
   const [error, setError] = useState<string | null>(null);
 
   const recognitionRef = useRef<any>(null);
