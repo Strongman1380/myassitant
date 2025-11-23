@@ -24,7 +24,7 @@ export const useAudioRecording = () => {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
       if (!SpeechRecognition) {
-        throw new Error('Speech recognition is not supported in this browser');
+        throw new Error('Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.');
       }
 
       // Create recognition instance
@@ -34,13 +34,15 @@ export const useAudioRecording = () => {
       recognition.lang = 'en-US';
 
       transcriptRef.current = '';
+      let hasReceivedResults = false;
 
       recognition.onstart = () => {
         setIsRecording(true);
-        console.log('Speech recognition started');
+        console.log('Speech recognition started - speak now');
       };
 
       recognition.onresult = (event: any) => {
+        hasReceivedResults = true;
         let interimTranscript = '';
         let finalTranscript = '';
 
@@ -56,20 +58,33 @@ export const useAudioRecording = () => {
         // Update the full transcript
         if (finalTranscript) {
           transcriptRef.current += finalTranscript;
+          console.log('Final transcript:', transcriptRef.current);
         }
       };
 
       recognition.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
-        setError(`Recognition error: ${event.error}`);
+
+        // Provide helpful error messages
+        let errorMessage = 'Speech recognition error';
+        if (event.error === 'not-allowed') {
+          errorMessage = 'Microphone access denied. Please allow microphone access.';
+        } else if (event.error === 'no-speech') {
+          errorMessage = 'No speech detected. Please try again and speak clearly.';
+        } else if (event.error === 'network') {
+          errorMessage = 'Network error. Check your connection.';
+        } else {
+          errorMessage = `Recognition error: ${event.error}`;
+        }
+
+        setError(errorMessage);
         setIsRecording(false);
       };
 
       recognition.onend = () => {
         console.log('Speech recognition ended');
-        if (isRecording) {
-          setIsRecording(false);
-        }
+        // Don't automatically set isRecording to false here
+        // Let the stopRecording function handle it
       };
 
       recognitionRef.current = recognition;
@@ -87,17 +102,21 @@ export const useAudioRecording = () => {
         return;
       }
 
-      // Get the final transcript
-      const finalTranscript = transcriptRef.current.trim();
-
+      // Stop the recognition
       recognitionRef.current.stop();
       setIsRecording(false);
 
-      if (finalTranscript) {
-        resolve(finalTranscript);
-      } else {
-        reject(new Error('No speech detected'));
-      }
+      // Give it a moment to process final results
+      setTimeout(() => {
+        const finalTranscript = transcriptRef.current.trim();
+
+        if (finalTranscript) {
+          console.log('Returning transcript:', finalTranscript);
+          resolve(finalTranscript);
+        } else {
+          reject(new Error('No speech detected. Please speak clearly and try again.'));
+        }
+      }, 500);
     });
   };
 
