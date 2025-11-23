@@ -21,8 +21,12 @@ router.post('/transcribe', upload.single('audio'), async (req, res) => {
       return res.status(400).json({ error: 'No audio file provided' });
     }
 
+    // Get extension from original filename
+    const originalName = req.file.originalname;
+    const extension = originalName.split('.').pop() || 'webm';
+
     // Create a temporary file from the buffer
-    const tempFilePath = `/tmp/audio-${Date.now()}.webm`;
+    const tempFilePath = `/tmp/audio-${Date.now()}.${extension}`;
     fs.writeFileSync(tempFilePath, req.file.buffer);
 
     try {

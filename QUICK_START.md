@@ -2,7 +2,12 @@
 
 ## ✅ Your App is Ready!
 
-**Deployment URL:** https://ai-assistant-cqr142lxa-strongman1380s-projects.vercel.app
+**Deployment URL:** https://assistant-50nwb97ip-strongman1380s-projects.vercel.app
+
+**Note:** The deployment currently has Vercel authentication enabled. To access it:
+1. Go to [Vercel Dashboard](https://vercel.com/strongman1380s-projects/assistant-app/settings/deployment-protection)
+2. Turn OFF "Vercel Authentication" under Deployment Protection
+3. The app will then be publicly accessible
 
 ## 📱 Install on iPhone (5 Easy Steps)
 
