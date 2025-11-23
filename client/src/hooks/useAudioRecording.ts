@@ -16,10 +16,24 @@ export const useAudioRecording = () => {
       // Request microphone access
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
+      // Determine supported MIME type
+      let mimeType = 'audio/webm';
+      if (typeof MediaRecorder.isTypeSupported === 'function') {
+        if (MediaRecorder.isTypeSupported('audio/webm')) {
+          mimeType = 'audio/webm';
+        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+          mimeType = 'audio/mp4';
+        } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
+          mimeType = 'audio/ogg';
+        } else {
+          // Fallback: let the browser choose
+          mimeType = '';
+        }
+      }
+
       // Create MediaRecorder
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm',
-      });
+      const options = mimeType ? { mimeType } : undefined;
+      const mediaRecorder = new MediaRecorder(stream, options);
 
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
@@ -45,6 +59,8 @@ export const useAudioRecording = () => {
         return;
       }
 
+      const mimeType = mediaRecorderRef.current.mimeType || 'audio/webm';
+
       mediaRecorderRef.current.onstop = async () => {
         setIsRecording(false);
         setIsTranscribing(true);
@@ -55,11 +71,17 @@ export const useAudioRecording = () => {
 
         try {
           // Create blob from recorded chunks
-          const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
+          const audioBlob = new Blob(chunksRef.current, { type: mimeType });
+          
+          // Determine extension based on mimeType
+          let extension = 'webm';
+          if (mimeType.includes('mp4')) extension = 'mp4';
+          else if (mimeType.includes('ogg')) extension = 'ogg';
+          else if (mimeType.includes('wav')) extension = 'wav';
 
           // Send to Whisper API
           const formData = new FormData();
-          formData.append('audio', audioBlob, 'recording.webm');
+          formData.append('audio', audioBlob, `recording.${extension}`);
 
           const response = await fetch(`${API_URL}/api/whisper/transcribe`, {
             method: 'POST',
