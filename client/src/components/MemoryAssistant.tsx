@@ -35,6 +35,14 @@ interface MemoryListResponse {
   count: number;
 }
 
+interface DriveFile {
+  id: string;
+  name: string;
+  mimeType: string;
+  modifiedTime?: string;
+  size?: string;
+}
+
 export const MemoryAssistant: React.FC = () => {
   const [rawInput, setRawInput] = useState('');
   const [memories, setMemories] = useState<Memory[]>([]);
@@ -51,6 +59,14 @@ export const MemoryAssistant: React.FC = () => {
   const [searchResults, setSearchResults] = useState<Memory[] | null>(null);
   const [searching, setSearching] = useState(false);
   const [searchExplanation, setSearchExplanation] = useState('');
+  const [driveAuthorized, setDriveAuthorized] = useState(false);
+  const [driveAuthUrl, setDriveAuthUrl] = useState('');
+  const [driveFiles, setDriveFiles] = useState<DriveFile[]>([]);
+  const [driveLoading, setDriveLoading] = useState(false);
+  const [driveError, setDriveError] = useState('');
+  const [driveStatusLoading, setDriveStatusLoading] = useState(true);
+  const [selectedDriveFile, setSelectedDriveFile] = useState<DriveFile | null>(null);
+  const [driveFileContent, setDriveFileContent] = useState('');
 
   const {
     isRecording,
@@ -63,6 +79,10 @@ export const MemoryAssistant: React.FC = () => {
   useEffect(() => {
     loadMemories();
     loadCategories();
+  }, []);
+
+  useEffect(() => {
+    loadDriveAuthStatus();
   }, []);
 
   const loadMemories = async (category?: string) => {
@@ -253,6 +273,96 @@ export const MemoryAssistant: React.FC = () => {
     setSearchQuery('');
     setSearchResults(null);
     setSearchExplanation('');
+  };
+
+  async function loadDriveAuthStatus() {
+    setDriveStatusLoading(true);
+    setDriveError('');
+
+    try {
+      const response = await fetch(`${API_URL}/api/drive/auth-status`);
+      if (!response.ok) {
+        throw new Error('Unable to reach Google Drive status');
+      }
+
+      const data = await response.json();
+      setDriveAuthorized(!!data.authorized);
+      setDriveAuthUrl(data.authUrl || '');
+      if (!data.authorized) {
+        setDriveFiles([]);
+        setDriveFileContent('');
+        setSelectedDriveFile(null);
+      }
+    } catch (err) {
+      console.error('Error loading Drive status:', err);
+      setDriveError('Unable to fetch Google Drive authorization status right now.');
+    } finally {
+      setDriveStatusLoading(false);
+    }
+  };
+
+  const handleDriveAuthorization = () => {
+    if (!driveAuthUrl) {
+      setDriveError('Authorization URL is unavailable. Try refreshing.');
+      return;
+    }
+
+    window.open(driveAuthUrl, '_blank');
+  };
+
+  const fetchDriveFiles = async () => {
+    if (!driveAuthorized) {
+      setDriveError('Authorize Google Drive first.');
+      return;
+    }
+
+    setDriveLoading(true);
+    setDriveError('');
+
+    try {
+      const response = await fetch(`${API_URL}/api/drive/files`);
+      if (!response.ok) {
+        throw new Error('Unable to list Drive files');
+      }
+      const data = await response.json();
+      setDriveFiles(data.files || []);
+    } catch (err) {
+      console.error('Error listing Drive files:', err);
+      setDriveError('Failed to load Drive files. Try again.');
+    } finally {
+      setDriveLoading(false);
+    }
+  };
+
+  const fetchDriveFileContent = async (file: DriveFile) => {
+    setSelectedDriveFile(file);
+    setDriveFileContent('');
+    setDriveError('');
+
+    try {
+      const response = await fetch(`${API_URL}/api/drive/files/${file.id}`);
+      if (!response.ok) {
+        throw new Error('Unable to download file');
+      }
+
+      const data = await response.json();
+      setDriveFileContent(data.content || '');
+    } catch (err) {
+      console.error('Error fetching file content:', err);
+      setDriveError('Failed to read the selected file.');
+    }
+  };
+
+  const formatFileSize = (size?: string) => {
+    if (!size) return '—';
+    const bytes = parseInt(size, 10);
+    if (Number.isNaN(bytes)) {
+      return size;
+    }
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
   };
 
   return (
@@ -473,6 +583,118 @@ export const MemoryAssistant: React.FC = () => {
                 </div>
               )}
             </div>
+          </div>
+        )}
+      </div>
+
+      <div className="result-container" style={{ marginTop: '30px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '12px' }}>
+          <h3 style={{ margin: 0 }}>Google Drive Files</h3>
+          <span style={{ fontSize: '12px', color: 'var(--text-dark)' }}>
+            {driveStatusLoading ? 'Checking status...' : driveAuthorized ? 'Connected' : 'Not connected'}
+          </span>
+        </div>
+        <p style={{ marginTop: 0, color: 'var(--text-dark)', fontSize: '14px' }}>
+          Authorize Google Drive to preview your documents and bring their content into your memories.
+        </p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '16px' }}>
+          <button
+            className="action-button"
+            type="button"
+            onClick={handleDriveAuthorization}
+            disabled={driveStatusLoading}
+          >
+            {driveAuthorized ? 'Reauthorize Drive' : 'Connect Drive'}
+          </button>
+          <button
+            className="action-button"
+            type="button"
+            onClick={loadDriveAuthStatus}
+            style={{ background: 'var(--secondary)', border: '1px solid transparent' }}
+          >
+            Refresh Status
+          </button>
+          <button
+            className="action-button"
+            type="button"
+            onClick={fetchDriveFiles}
+            disabled={!driveAuthorized || driveLoading}
+            style={{ background: driveAuthorized ? 'var(--primary)' : 'var(--border-color)', cursor: driveAuthorized ? 'pointer' : 'not-allowed' }}
+          >
+            {driveLoading ? 'Loading files…' : 'Load Files'}
+          </button>
+        </div>
+        {driveError && (
+          <div className="error-message" style={{ marginBottom: '16px' }}>
+            {driveError}
+          </div>
+        )}
+        {driveAuthorized && (
+          <div>
+            {driveFiles.length === 0 ? (
+              <div style={{ fontSize: '13px', color: 'var(--text-dark)' }}>
+                No files loaded yet. Tap “Load Files” to see the latest list.
+              </div>
+            ) : (
+              <div className="memory-list" style={{ marginTop: '12px', maxHeight: '220px', overflowY: 'auto' }}>
+                {driveFiles.map((file) => (
+                  <button
+                    key={file.id}
+                    onClick={() => fetchDriveFileContent(file)}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      width: '100%',
+                      padding: '10px 14px',
+                      marginBottom: '8px',
+                      borderRadius: '8px',
+                      border: selectedDriveFile?.id === file.id ? '1px solid var(--primary)' : '1px solid var(--border-color)',
+                      background: selectedDriveFile?.id === file.id ? 'var(--background-light)' : 'white',
+                      cursor: 'pointer',
+                      textAlign: 'left'
+                    }}
+                  >
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: '600', marginBottom: '4px' }}>{file.name}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-dark)' }}>
+                        {file.mimeType} • {formatFileSize(file.size)} • {file.modifiedTime ? new Date(file.modifiedTime).toLocaleDateString() : '—'}
+                      </div>
+                    </div>
+                    <span style={{ fontSize: '12px', color: 'var(--secondary)' }}>
+                      {selectedDriveFile?.id === file.id ? 'Selected' : 'Preview'}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        {driveFileContent && (
+          <div style={{ marginTop: '16px' }}>
+            <div style={{
+              fontSize: '13px',
+              marginBottom: '6px',
+              color: 'var(--text-dark)'
+            }}>
+              Preview: {selectedDriveFile?.name}
+            </div>
+            <pre style={{
+              whiteSpace: 'pre-wrap',
+              borderRadius: '8px',
+              padding: '12px',
+              background: 'var(--background-light)',
+              maxHeight: '200px',
+              overflowY: 'auto',
+              fontSize: '13px'
+            }}>
+              {driveFileContent}
+            </pre>
+          </div>
+        )}
+        {!driveAuthorized && !driveStatusLoading && (
+          <div style={{ fontSize: '13px', color: 'var(--text-dark)', marginTop: '12px' }}>
+            After connecting, return here and tap “Load Files” to explore your Drive content.
           </div>
         )}
       </div>

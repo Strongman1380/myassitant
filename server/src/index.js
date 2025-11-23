@@ -8,6 +8,7 @@ import aiRoutes from './routes/ai.js';
 import memoryRoutes from './routes/memory.js';
 import whisperRoutes from './routes/whisper.js';
 import calendarRoutes from './routes/calendar.js';
+import driveRoutes from './routes/drive.js';
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/memory', memoryRoutes);
 app.use('/api/whisper', whisperRoutes);
 app.use('/api/calendar', calendarRoutes);
+app.use('/api/drive', driveRoutes);
 
 // Serve static files only if the built client is present
 if (hasClientDist) {
