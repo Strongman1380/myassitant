@@ -23,9 +23,9 @@ function getCredentials() {
     console.log('✅ Using Google Calendar credentials from environment variables');
     const baseUrl = process.env.BASE_URL || 'http://localhost:3001';
     return {
-      client_id: process.env.GOOGLE_CLIENT_ID,
-      client_secret: process.env.GOOGLE_CLIENT_SECRET,
-      redirect_uri: process.env.GOOGLE_REDIRECT_URI || `${baseUrl}/api/calendar/oauth-callback`
+      client_id: process.env.GOOGLE_CLIENT_ID.trim(),
+      client_secret: process.env.GOOGLE_CLIENT_SECRET.trim(),
+      redirect_uri: (process.env.GOOGLE_REDIRECT_URI || `${baseUrl}/api/calendar/oauth-callback`).trim()
     };
   }
 
