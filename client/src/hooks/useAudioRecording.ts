@@ -24,7 +24,9 @@ export const useAudioRecording = () => {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
       if (!SpeechRecognition) {
-        throw new Error('Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.');
+        const errorMsg = 'Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.';
+        setError(errorMsg);
+        throw new Error(errorMsg);
       }
 
       // Create recognition instance
@@ -37,6 +39,7 @@ export const useAudioRecording = () => {
 
       recognition.onstart = () => {
         setIsRecording(true);
+        setError(null); // Clear any previous errors when recording starts successfully
         console.log('Speech recognition started - speak now');
       };
 
@@ -66,17 +69,28 @@ export const useAudioRecording = () => {
         // Provide helpful error messages
         let errorMessage = 'Speech recognition error';
         if (event.error === 'not-allowed') {
-          errorMessage = 'Microphone access denied. Please allow microphone access.';
+          errorMessage = 'Microphone access denied. Please allow microphone access in your browser settings.';
         } else if (event.error === 'no-speech') {
           errorMessage = 'No speech detected. Please try again and speak clearly.';
         } else if (event.error === 'network') {
-          errorMessage = 'Network error. Check your connection.';
+          errorMessage = 'Network error. Speech recognition requires internet connection.';
+        } else if (event.error === 'aborted') {
+          errorMessage = 'Recording was aborted. Please try again.';
         } else {
-          errorMessage = `Recognition error: ${event.error}`;
+          errorMessage = `Recognition error: ${event.error}. Please try again.`;
         }
 
         setError(errorMessage);
         setIsRecording(false);
+
+        // Clean up the recognition instance
+        if (recognitionRef.current) {
+          try {
+            recognitionRef.current.stop();
+          } catch (e) {
+            // Ignore errors when stopping
+          }
+        }
       };
 
       recognition.onend = () => {

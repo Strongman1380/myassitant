@@ -8,6 +8,8 @@ export const CalendarAssistant: React.FC = () => {
   const [result, setResult] = useState<CalendarResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [created, setCreated] = useState(false);
 
   const {
     isRecording,
@@ -39,6 +41,7 @@ export const CalendarAssistant: React.FC = () => {
     setLoading(true);
     setError('');
     setResult(null);
+    setCreated(false);
 
     try {
       const response = await fetch(`${API_URL}/api/ai/calendar`, {
@@ -59,6 +62,49 @@ export const CalendarAssistant: React.FC = () => {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCreateEvent = async () => {
+    if (!result) return;
+
+    setCreating(true);
+    setError('');
+
+    try {
+      const response = await fetch(`${API_URL}/api/calendar/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: result.title,
+          start: result.start,
+          end: result.end,
+          notes: result.notes,
+          reminderMinutes: result.reminderMinutesBefore,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create calendar event');
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        setCreated(true);
+        setError('');
+      } else if (data.needsAuth) {
+        setError(`Calendar authorization required. Please visit: ${data.authUrl}`);
+      } else {
+        throw new Error(data.message || 'Failed to create event');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create calendar event');
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -168,9 +214,18 @@ export const CalendarAssistant: React.FC = () => {
               </div>
             )}
           </div>
+          {created && (
+            <div className="success-message" style={{ marginTop: '1rem' }}>
+              ✅ Event successfully added to your Google Calendar!
+            </div>
+          )}
           <div className="result-actions">
-            <button className="secondary-button">
-              Download .ics (Coming Soon)
+            <button
+              className="action-button"
+              onClick={handleCreateEvent}
+              disabled={creating || created}
+            >
+              {creating ? 'Creating Event...' : created ? '✓ Event Created' : 'Add to Google Calendar'}
             </button>
           </div>
         </div>
