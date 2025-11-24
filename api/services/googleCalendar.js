@@ -20,6 +20,7 @@ const SCOPES = ['https://www.googleapis.com/auth/calendar'];
 function getCredentials() {
   // Check for environment variables first (for production deployment)
   if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    console.log('✅ Using Google Calendar credentials from environment variables');
     const baseUrl = process.env.BASE_URL || 'http://localhost:3001';
     return {
       client_id: process.env.GOOGLE_CLIENT_ID,
@@ -73,11 +74,13 @@ async function authorize() {
   // Check for token from environment variable first (for production)
   if (process.env.GOOGLE_TOKEN) {
     try {
+      console.log('✅ Using Google Calendar token from environment variables');
       const token = JSON.parse(process.env.GOOGLE_TOKEN);
       oAuth2Client.setCredentials(token);
       return oAuth2Client;
     } catch (error) {
-      console.error('Failed to parse GOOGLE_TOKEN from environment:', error);
+      console.error('❌ Failed to parse GOOGLE_TOKEN from environment:', error);
+      throw error;
     }
   }
 

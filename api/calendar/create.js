@@ -6,6 +6,14 @@ export default async function handler(req, res) {
   }
 
   try {
+    console.log('📅 Creating calendar event...');
+    console.log('Environment check:', {
+      hasClientId: !!process.env.GOOGLE_CLIENT_ID,
+      hasClientSecret: !!process.env.GOOGLE_CLIENT_SECRET,
+      hasToken: !!process.env.GOOGLE_TOKEN,
+      hasRedirectUri: !!process.env.GOOGLE_REDIRECT_URI
+    });
+
     const { title, start, end, notes, reminderMinutes } = req.body;
 
     if (!title || !start || !end) {
@@ -20,9 +28,11 @@ export default async function handler(req, res) {
       reminderMinutes,
     });
 
+    console.log('✅ Calendar event created successfully');
     res.status(200).json(result);
   } catch (error) {
-    console.error('Error in /api/calendar/create:', error);
+    console.error('❌ Error in /api/calendar/create:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({ error: error.message || 'Failed to create calendar event' });
   }
 }
