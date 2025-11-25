@@ -16,9 +16,9 @@ function getDriveCredentials() {
 
   if (process.env.GOOGLE_DRIVE_CLIENT_ID && process.env.GOOGLE_DRIVE_CLIENT_SECRET) {
     return {
-      client_id: process.env.GOOGLE_DRIVE_CLIENT_ID,
-      client_secret: process.env.GOOGLE_DRIVE_CLIENT_SECRET,
-      redirect_uri: process.env.GOOGLE_DRIVE_REDIRECT_URI || `${baseUrl}/api/drive/oauth-callback`
+      client_id: process.env.GOOGLE_DRIVE_CLIENT_ID.trim(),
+      client_secret: process.env.GOOGLE_DRIVE_CLIENT_SECRET.trim(),
+      redirect_uri: (process.env.GOOGLE_DRIVE_REDIRECT_URI || `${baseUrl}/api/drive/oauth-callback`).trim()
     };
   }
 
