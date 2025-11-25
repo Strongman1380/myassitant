@@ -4,6 +4,7 @@ import { TextAssistant } from './components/TextAssistant';
 import { EmailAssistant } from './components/EmailAssistant';
 import { CalendarAssistant } from './components/CalendarAssistant';
 import { MemoryAssistant } from './components/MemoryAssistant';
+import { DocumentUpload } from './components/DocumentUpload';
 import './App.css';
 
 const MODES: Array<{
@@ -41,6 +42,13 @@ const MODES: Array<{
     hint: 'Facts, names, routines',
     icon: '🧠',
   },
+  {
+    id: 'upload' as AssistantMode,
+    label: 'Document Upload',
+    description: 'Upload and process text documents with AI assistance.',
+    hint: 'Text files, code, logs',
+    icon: '📄',
+  },
 ];
 
 function App() {
@@ -57,6 +65,8 @@ function App() {
         return <CalendarAssistant />;
       case 'memory':
         return <MemoryAssistant />;
+      case 'upload' as AssistantMode:
+        return <DocumentUpload />;
       default:
         return <TextAssistant />;
     }
