@@ -90,7 +90,7 @@ export const useAudioRecording = () => {
           const formData = new FormData();
           formData.append('audio', audioBlob, 'recording.webm');
 
-          const response = await fetch(`${API_URL}/api/transcribe`, {
+          const response = await fetch(`${API_URL}/api/whisper/transcribe`, {
             method: 'POST',
             body: formData,
           });
@@ -101,7 +101,7 @@ export const useAudioRecording = () => {
           }
 
           const data = await response.json();
-          const transcript = data.text || data.transcript;
+          const transcript = data.transcription || data.text || data.transcript;
 
           if (!transcript || transcript.trim() === '') {
             throw new Error('No speech detected. Please speak clearly and try again.');
