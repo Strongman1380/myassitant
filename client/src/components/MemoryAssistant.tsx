@@ -67,6 +67,9 @@ export const MemoryAssistant: React.FC = () => {
   const [driveStatusLoading, setDriveStatusLoading] = useState(true);
   const [selectedDriveFile, setSelectedDriveFile] = useState<DriveFile | null>(null);
   const [driveFileContent, setDriveFileContent] = useState('');
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState('');
 
   const {
     isRecording,
@@ -365,6 +368,54 @@ export const MemoryAssistant: React.FC = () => {
     return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setUploadFile(e.target.files[0]);
+      setUploadMessage('');
+    }
+  };
+
+  const handleDocumentUpload = async () => {
+    if (!uploadFile) {
+      setUploadMessage('Please select a file first');
+      return;
+    }
+
+    setUploading(true);
+    setUploadMessage('');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', uploadFile);
+
+      const response = await fetch(`${API_URL}/api/memory/parse-document`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Upload failed');
+      }
+
+      const data = await response.json();
+      setUploadMessage(`✅ ${data.message}`);
+      setUploadFile(null);
+
+      // Reset file input
+      const fileInput = document.getElementById('doc-upload-input') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
+
+      // Reload memories to show the new ones
+      loadMemories();
+      loadCategories();
+    } catch (error) {
+      setUploadMessage(`❌ Error: ${error instanceof Error ? error.message : 'Upload failed'}`);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <div>
       <div className="form-group">
@@ -525,6 +576,71 @@ export const MemoryAssistant: React.FC = () => {
               >
                 Clear
               </button>
+            )}
+          </div>
+        </div>
+
+        {/* Document Upload Section */}
+        <div style={{ marginTop: '24px', marginBottom: '24px' }}>
+          <div style={{
+            padding: '16px',
+            background: 'var(--background-light)',
+            borderRadius: '8px',
+            borderLeft: '4px solid #9b59b6'
+          }}>
+            <div style={{ fontWeight: '500', marginBottom: '12px', color: '#9b59b6' }}>
+              📄 Upload Document to Extract Memories
+            </div>
+            <div style={{ fontSize: '13px', color: 'var(--text-dark)', marginBottom: '12px' }}>
+              Upload a text document and AI will automatically extract important information and save it as memories.
+            </div>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <input
+                type="file"
+                accept=".txt,.md,.doc,.docx"
+                onChange={handleFileChange}
+                style={{
+                  padding: '8px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-color)',
+                  fontSize: '14px',
+                  flex: '1',
+                  minWidth: '200px'
+                }}
+              />
+              {uploadFile && (
+                <div style={{ fontSize: '13px', color: 'var(--text-dark)' }}>
+                  {uploadFile.name} ({(uploadFile.size / 1024).toFixed(1)} KB)
+                </div>
+              )}
+              <button
+                onClick={handleDocumentUpload}
+                disabled={!uploadFile || uploading}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: uploadFile && !uploading ? '#9b59b6' : '#ccc',
+                  color: 'white',
+                  cursor: uploadFile && !uploading ? 'pointer' : 'not-allowed',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}
+              >
+                {uploading ? 'Processing...' : 'Upload & Parse'}
+              </button>
+            </div>
+            {uploadMessage && (
+              <div style={{
+                marginTop: '12px',
+                padding: '8px 12px',
+                background: uploadMessage.includes('✅') ? '#d4edda' : '#f8d7da',
+                color: uploadMessage.includes('✅') ? '#155724' : '#721c24',
+                borderRadius: '6px',
+                fontSize: '13px'
+              }}>
+                {uploadMessage}
+              </div>
             )}
           </div>
         </div>
