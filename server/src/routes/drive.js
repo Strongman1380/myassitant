@@ -40,8 +40,9 @@ router.get('/auth-url', (req, res) => {
 router.get('/oauth-callback', async (req, res) => {
   try {
     const { code } = req.query;
-    const appUrl = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
+    // Use production URL or fall back to localhost for development
+    const appUrl = process.env.VERCEL
+      ? 'https://assistant-app-strongman1380s-projects.vercel.app'
       : (process.env.BASE_URL || 'http://localhost:3000');
 
     if (!code) {
@@ -75,8 +76,8 @@ router.get('/oauth-callback', async (req, res) => {
     `);
   } catch (error) {
     console.error('Error in /api/drive/oauth-callback:', error);
-    const appUrl = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
+    const appUrl = process.env.VERCEL
+      ? 'https://assistant-app-strongman1380s-projects.vercel.app'
       : (process.env.BASE_URL || 'http://localhost:3000');
 
     res.send(`
