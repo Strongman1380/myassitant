@@ -106,7 +106,7 @@ export async function saveDriveToken(code) {
   console.log(JSON.stringify(tokens));
   console.log('\n');
 
-  return oAuth2Client;
+  return tokens;
 }
 
 export function isDriveAuthorized() {

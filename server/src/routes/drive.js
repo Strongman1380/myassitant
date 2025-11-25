@@ -40,6 +40,9 @@ router.get('/auth-url', (req, res) => {
 router.get('/oauth-callback', async (req, res) => {
   try {
     const { code } = req.query;
+    const appUrl = process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : (process.env.BASE_URL || 'http://localhost:3000');
 
     if (!code) {
       return res.send(`
@@ -47,31 +50,41 @@ router.get('/oauth-callback', async (req, res) => {
           <body style="font-family: Arial; padding: 40px; text-align: center;">
             <h1 style="color: #dc3545;">❌ Missing authorization code</h1>
             <p>Please try authorizing again.</p>
-            <a href="http://localhost:3000" style="color: #007bff;">Return to App</a>
+            <a href="${appUrl}" style="color: #007bff;">Return to App</a>
           </body>
         </html>
       `);
     }
 
-    await saveDriveToken(code);
+    const tokenData = await saveDriveToken(code);
+
+    // Log token for environment variable
+    console.log('\n🔑 IMPORTANT: Save this Google Drive token as GOOGLE_DRIVE_TOKEN environment variable:');
+    console.log(JSON.stringify(tokenData));
+    console.log('\n');
 
     res.send(`
       <html>
         <body style="font-family: Arial; padding: 40px; text-align: center;">
           <h1 style="color: #28a745;">✅ Google Drive Connected!</h1>
-          <p>You can now close this window and return to the app.</p>
-          <a href="http://localhost:3000" style="display: inline-block; margin-top: 20px; padding: 12px 24px; background: #007bff; color: white; text-decoration: none; border-radius: 6px;">Return to App</a>
+          <p>Authorization successful! The token has been logged.</p>
+          <p style="margin-top: 20px; color: #666; font-size: 14px;">Check the server logs to save the GOOGLE_DRIVE_TOKEN environment variable.</p>
+          <a href="${appUrl}" style="display: inline-block; margin-top: 20px; padding: 12px 24px; background: #007bff; color: white; text-decoration: none; border-radius: 6px;">Return to App</a>
         </body>
       </html>
     `);
   } catch (error) {
     console.error('Error in /api/drive/oauth-callback:', error);
+    const appUrl = process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : (process.env.BASE_URL || 'http://localhost:3000');
+
     res.send(`
       <html>
         <body style="font-family: Arial; padding: 40px; text-align: center;">
           <h1 style="color: #dc3545;">❌ Drive authorization failed</h1>
           <p>${error.message}</p>
-          <a href="http://localhost:3000" style="color: #007bff;">Return to App</a>
+          <a href="${appUrl}" style="color: #007bff;">Return to App</a>
         </body>
       </html>
     `);
