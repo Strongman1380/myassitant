@@ -11,10 +11,6 @@
   "functions": {
     "api/index.js": {
       "memory": 1024,
-      "maxDuration": 30
-    },
-    "api/memory/parse-document.js": {
-      "memory": 1024,
       "maxDuration": 60
     },
     "api/upload.js": {
