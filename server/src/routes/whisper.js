@@ -1,40 +1,37 @@
 import express from 'express';
-import multer from 'multer';
+import formidable from 'formidable';
 import fs from 'fs';
 import { callWhisper } from '../services/openai.js';
 
 const router = express.Router();
 
-// Configure multer for file uploads (store in memory)
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 25 * 1024 * 1024, // 25MB max (Whisper limit)
-  },
-});
-
 // POST /api/whisper/transcribe
 // Upload audio file and get transcription
-router.post('/transcribe', upload.single('audio'), async (req, res) => {
+router.post('/transcribe', async (req, res) => {
   try {
-    if (!req.file) {
+    // Parse the multipart form data using formidable
+    const form = formidable({
+      maxFileSize: 25 * 1024 * 1024, // 25MB max (Whisper limit)
+      keepExtensions: true,
+    });
+
+    const [fields, files] = await form.parse(req);
+
+    // Get the uploaded audio file
+    const audioFile = files.audio?.[0];
+
+    if (!audioFile) {
       return res.status(400).json({ error: 'No audio file provided' });
     }
 
-    // Get extension from original filename
-    const originalName = req.file.originalname;
-    const extension = originalName.split('.').pop() || 'webm';
-
-    // Create a temporary file from the buffer
-    const tempFilePath = `/tmp/audio-${Date.now()}.${extension}`;
-    fs.writeFileSync(tempFilePath, req.file.buffer);
+    console.log('🎤 Transcribing audio:', audioFile.originalFilename || 'recording.webm');
 
     try {
-      // Call Whisper API
-      const transcription = await callWhisper(tempFilePath);
+      // Call Whisper API with the uploaded file path
+      const transcription = await callWhisper(audioFile.filepath);
 
       // Clean up temp file
-      fs.unlinkSync(tempFilePath);
+      fs.unlinkSync(audioFile.filepath);
 
       res.json({
         success: true,
@@ -42,8 +39,8 @@ router.post('/transcribe', upload.single('audio'), async (req, res) => {
       });
     } catch (error) {
       // Clean up temp file even if error occurs
-      if (fs.existsSync(tempFilePath)) {
-        fs.unlinkSync(tempFilePath);
+      if (fs.existsSync(audioFile.filepath)) {
+        fs.unlinkSync(audioFile.filepath);
       }
       throw error;
     }
