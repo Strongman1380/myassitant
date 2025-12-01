@@ -55,6 +55,13 @@ export async function callOpenAIForJSON(systemPrompt, userMessage) {
  */
 export async function callWhisper(audioFilePath) {
   try {
+    console.log('📁 Audio file path:', audioFilePath);
+    console.log('📊 File exists:', fs.existsSync(audioFilePath));
+    if (fs.existsSync(audioFilePath)) {
+      const stats = fs.statSync(audioFilePath);
+      console.log('📏 File size:', stats.size, 'bytes');
+    }
+
     const transcription = await openai.audio.transcriptions.create({
       file: fs.createReadStream(audioFilePath),
       model: 'whisper-1',
@@ -64,6 +71,8 @@ export async function callWhisper(audioFilePath) {
     return transcription.text;
   } catch (error) {
     console.error('Whisper API Error:', error);
-    throw new Error('Failed to transcribe audio');
+    console.error('Error details:', error.message);
+    console.error('Error stack:', error.stack);
+    throw new Error(`Whisper API Error: ${error.message}`);
   }
 }

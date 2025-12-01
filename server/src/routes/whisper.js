@@ -9,6 +9,9 @@ const router = express.Router();
 // Upload audio file and get transcription
 router.post('/transcribe', async (req, res) => {
   try {
+    console.log('📥 Received transcription request');
+    console.log('Headers:', req.headers);
+
     // Parse the multipart form data using formidable
     const form = formidable({
       maxFileSize: 25 * 1024 * 1024, // 25MB max (Whisper limit)
@@ -17,14 +20,21 @@ router.post('/transcribe', async (req, res) => {
 
     const [fields, files] = await form.parse(req);
 
+    console.log('📂 Files received:', Object.keys(files));
+    console.log('📋 Fields received:', Object.keys(fields));
+
     // Get the uploaded audio file
     const audioFile = files.audio?.[0];
 
     if (!audioFile) {
+      console.error('❌ No audio file found in request');
+      console.error('Available file keys:', Object.keys(files));
       return res.status(400).json({ error: 'No audio file provided' });
     }
 
     console.log('🎤 Transcribing audio:', audioFile.originalFilename || 'recording.webm');
+    console.log('📏 Audio file size:', audioFile.size, 'bytes');
+    console.log('📁 Temp file path:', audioFile.filepath);
 
     try {
       // Call Whisper API with the uploaded file path
