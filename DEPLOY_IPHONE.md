@@ -137,8 +137,6 @@ The app will appear on your home screen with the custom icon and run in fullscre
    ```bash
    # macOS/Linux
    ifconfig | grep "inet "
-   # Windows
-   ipconfig
    ```
 
 2. Create `client/.env.local`:
