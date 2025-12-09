@@ -3,6 +3,8 @@ import { CalendarResponse } from '../types';
 import { useAudioRecording } from '../hooks/useAudioRecording';
 import { API_URL } from '../config';
 
+type CalendarProvider = 'google' | 'outlook';
+
 export const CalendarAssistant: React.FC = () => {
   const [prompt, setPrompt] = useState('');
   const [result, setResult] = useState<CalendarResponse | null>(null);
@@ -10,6 +12,11 @@ export const CalendarAssistant: React.FC = () => {
   const [error, setError] = useState('');
   const [creating, setCreating] = useState(false);
   const [created, setCreated] = useState(false);
+  const [provider, setProvider] = useState<CalendarProvider>(() => {
+    // Load provider preference from localStorage
+    const saved = localStorage.getItem('calendarProvider');
+    return (saved === 'outlook' ? 'outlook' : 'google') as CalendarProvider;
+  });
 
   const {
     isRecording,
@@ -83,6 +90,7 @@ export const CalendarAssistant: React.FC = () => {
           end: result.end,
           notes: result.notes,
           reminderMinutes: result.reminderMinutesBefore,
+          provider: provider,
         }),
       });
 
@@ -128,8 +136,54 @@ export const CalendarAssistant: React.FC = () => {
     });
   };
 
+  const handleProviderChange = (newProvider: CalendarProvider) => {
+    setProvider(newProvider);
+    localStorage.setItem('calendarProvider', newProvider);
+    setCreated(false); // Reset created state when switching providers
+  };
+
+  const providerName = provider === 'google' ? 'Google Calendar' : 'Outlook Calendar';
+
   return (
     <div>
+      <div className="form-group">
+        <label htmlFor="calendar-provider">Calendar Provider</label>
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
+          <button
+            type="button"
+            className={`provider-button ${provider === 'google' ? 'active' : ''}`}
+            onClick={() => handleProviderChange('google')}
+            style={{
+              flex: 1,
+              padding: '10px',
+              border: provider === 'google' ? '2px solid #4285f4' : '1px solid var(--border-color)',
+              background: provider === 'google' ? 'rgba(66, 133, 244, 0.1)' : 'transparent',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: provider === 'google' ? '600' : '400',
+            }}
+          >
+            📧 Google Calendar
+          </button>
+          <button
+            type="button"
+            className={`provider-button ${provider === 'outlook' ? 'active' : ''}`}
+            onClick={() => handleProviderChange('outlook')}
+            style={{
+              flex: 1,
+              padding: '10px',
+              border: provider === 'outlook' ? '2px solid #0078d4' : '1px solid var(--border-color)',
+              background: provider === 'outlook' ? 'rgba(0, 120, 212, 0.1)' : 'transparent',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: provider === 'outlook' ? '600' : '400',
+            }}
+          >
+            📅 Outlook Calendar
+          </button>
+        </div>
+      </div>
+
       <div className="form-group">
         <label htmlFor="calendar-prompt">Event Details</label>
         <div className="input-with-mic">
@@ -216,7 +270,7 @@ export const CalendarAssistant: React.FC = () => {
           </div>
           {created && (
             <div className="success-message" style={{ marginTop: '1rem' }}>
-              ✅ Event successfully added to your Google Calendar!
+              ✅ Event successfully added to your {providerName}!
             </div>
           )}
           <div className="result-actions">
@@ -225,7 +279,7 @@ export const CalendarAssistant: React.FC = () => {
               onClick={handleCreateEvent}
               disabled={creating || created}
             >
-              {creating ? 'Creating Event...' : created ? '✓ Event Created' : 'Add to Google Calendar'}
+              {creating ? 'Creating Event...' : created ? '✓ Event Created' : `Add to ${providerName}`}
             </button>
           </div>
         </div>
