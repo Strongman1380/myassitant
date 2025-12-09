@@ -81,6 +81,12 @@ export async function createOutlookEvent({ title, start, end, notes, reminderMin
       throw new Error('Outlook Calendar is not configured. Please set MICROSOFT_CLIENT_ID, MICROSOFT_TENANT_ID, and MICROSOFT_CLIENT_SECRET environment variables.');
     }
 
+    // Get the user email/ID from config (required for application permissions)
+    const userEmail = config.microsoftUserEmail;
+    if (!userEmail) {
+      throw new Error('MICROSOFT_USER_EMAIL environment variable is required to create calendar events.');
+    }
+
     const client = await getGraphClient();
 
     // Build the event object
@@ -110,9 +116,10 @@ export async function createOutlookEvent({ title, start, end, notes, reminderMin
       event.reminderMinutesBeforeStart = reminderMinutes;
     }
 
-    // Create the event in the user's calendar
+    // Create the event in the specified user's calendar
+    // Using /users/{email}/events instead of /me/events for application permissions
     const result = await client
-      .api('/me/events')
+      .api(`/users/${userEmail}/events`)
       .post(event);
 
     console.log('✅ Outlook event created:', result.id);

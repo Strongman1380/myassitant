@@ -8,5 +8,6 @@ export const config = {
   microsoftClientId: process.env.MICROSOFT_CLIENT_ID || '',
   microsoftTenantId: process.env.MICROSOFT_TENANT_ID || '',
   microsoftClientSecret: process.env.MICROSOFT_CLIENT_SECRET || '',
+  microsoftUserEmail: process.env.MICROSOFT_USER_EMAIL || '',
   apiUrl: process.env.API_URL || '',
 };
