@@ -1,14 +1,13 @@
 import express from 'express';
 import { createCalendarEvent, isAuthorized, getAuthUrl, saveToken } from '../services/googleCalendar.js';
-import { createOutlookEvent, isOutlookConfigured } from '../services/outlookCalendar.js';
 
 const router = express.Router();
 
 // POST /api/calendar/create
-// Body: { title, start, end, notes, reminderMinutes, provider }
+// Body: { title, start, end, notes, reminderMinutes }
 router.post('/create', async (req, res) => {
   try {
-    const { title, start, end, notes, reminderMinutes, provider = 'google' } = req.body;
+    const { title, start, end, notes, reminderMinutes } = req.body;
 
     console.log('📅 Calendar event creation request:', {
       title,
@@ -16,34 +15,19 @@ router.post('/create', async (req, res) => {
       end,
       notes,
       reminderMinutes,
-      provider,
     });
 
     if (!title || !start || !end) {
       return res.status(400).json({ error: 'Missing required fields: title, start, end' });
     }
 
-    let result;
-
-    if (provider === 'outlook') {
-      // Create event in Outlook Calendar
-      result = await createOutlookEvent({
-        title,
-        start,
-        end,
-        notes,
-        reminderMinutes,
-      });
-    } else {
-      // Create event in Google Calendar (default)
-      result = await createCalendarEvent({
-        title,
-        start,
-        end,
-        notes,
-        reminderMinutes,
-      });
-    }
+    const result = await createCalendarEvent({
+      title,
+      start,
+      end,
+      notes,
+      reminderMinutes,
+    });
 
     console.log('✅ Calendar event created successfully:', result);
     res.json(result);
