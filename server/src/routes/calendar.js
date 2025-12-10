@@ -3,6 +3,42 @@ import { createCalendarEvent, isAuthorized, getAuthUrl, saveToken } from '../ser
 
 const router = express.Router();
 
+// GET /api/calendar/debug
+// Debug endpoint to check configuration
+router.get('/debug', (req, res) => {
+  const hasClientId = !!process.env.GOOGLE_CLIENT_ID;
+  const hasClientSecret = !!process.env.GOOGLE_CLIENT_SECRET;
+  const hasToken = !!process.env.GOOGLE_TOKEN;
+  const hasRedirectUri = !!process.env.GOOGLE_REDIRECT_URI;
+
+  let tokenInfo = null;
+  if (process.env.GOOGLE_TOKEN) {
+    try {
+      const token = JSON.parse(process.env.GOOGLE_TOKEN);
+      tokenInfo = {
+        hasAccessToken: !!token.access_token,
+        hasRefreshToken: !!token.refresh_token,
+        tokenType: token.token_type,
+        expiryDate: token.expiry_date ? new Date(token.expiry_date).toISOString() : 'not set',
+        scope: token.scope,
+      };
+    } catch (e) {
+      tokenInfo = { error: 'Failed to parse token: ' + e.message };
+    }
+  }
+
+  res.json({
+    credentials: {
+      hasClientId,
+      hasClientSecret,
+      hasRedirectUri,
+      hasToken,
+    },
+    tokenInfo,
+    authorized: isAuthorized(),
+  });
+});
+
 // POST /api/calendar/create
 // Body: { title, start, end, notes, reminderMinutes }
 router.post('/create', async (req, res) => {
