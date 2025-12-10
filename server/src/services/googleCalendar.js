@@ -197,9 +197,15 @@ export async function createCalendarEvent(eventData) {
     };
   } catch (error) {
     console.error('Google Calendar API Error:', error);
+    console.error('Error details:', error.message);
+    console.error('Error code:', error.code);
 
     // Check if it's an authorization error
-    if (error.message.includes('No token.json found')) {
+    if (error.message.includes('No token') ||
+        error.message.includes('not found') ||
+        error.message.includes('authorization') ||
+        error.code === 401 ||
+        error.code === 403) {
       return {
         success: false,
         needsAuth: true,
