@@ -33,6 +33,7 @@ router.get('/debug', (req, res) => {
       hasClientSecret,
       hasRedirectUri,
       hasToken,
+      redirectUri: process.env.GOOGLE_REDIRECT_URI || 'not set (using default)',
     },
     tokenInfo,
     authorized: isAuthorized(),
