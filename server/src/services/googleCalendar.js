@@ -74,10 +74,12 @@ async function authorize() {
   if (process.env.GOOGLE_TOKEN) {
     try {
       const token = JSON.parse(process.env.GOOGLE_TOKEN);
+      console.log('✅ Successfully parsed GOOGLE_TOKEN from environment');
       oAuth2Client.setCredentials(token);
       return oAuth2Client;
     } catch (error) {
-      console.error('Failed to parse GOOGLE_TOKEN from environment:', error);
+      console.error('❌ Failed to parse GOOGLE_TOKEN from environment:', error);
+      throw new Error('Invalid GOOGLE_TOKEN format in environment variables');
     }
   }
 
@@ -158,7 +160,12 @@ export function saveToken(code) {
  */
 export async function createCalendarEvent(eventData) {
   try {
+    console.log('📅 Starting calendar event creation...');
+    console.log('📋 Event data:', JSON.stringify(eventData, null, 2));
+
     const auth = await authorize();
+    console.log('✅ Authorization successful');
+
     const calendar = google.calendar({ version: 'v3', auth });
 
     const event = {
@@ -184,10 +191,14 @@ export async function createCalendarEvent(eventData) {
       };
     }
 
+    console.log('🔄 Calling Google Calendar API...');
     const response = await calendar.events.insert({
       calendarId: 'primary',
       resource: event,
     });
+
+    console.log('✅ Event created successfully!');
+    console.log('🔗 Event link:', response.data.htmlLink);
 
     return {
       success: true,
