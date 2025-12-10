@@ -1,141 +1,376 @@
-import { useState } from 'react';
-import { AssistantMode } from './types';
-import { TextAssistant } from './components/TextAssistant';
-import { EmailAssistant } from './components/EmailAssistant';
-import { CalendarAssistant } from './components/CalendarAssistant';
-import { MemoryAssistant } from './components/MemoryAssistant';
+import { useState, useRef, useEffect } from 'react';
+import { AssistantMode, TextResponse, EmailResponse, CalendarResponse } from './types';
+import { useAudioRecording } from './hooks/useAudioRecording';
+import { API_URL } from './config';
 import './App.css';
+
+type Message = {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  mode: AssistantMode;
+  data?: TextResponse | EmailResponse | CalendarResponse;
+  timestamp: Date;
+};
 
 const MODES: Array<{
   id: AssistantMode;
   label: string;
-  description: string;
-  hint: string;
   icon: string;
 }> = [
-  {
-    id: 'text',
-    label: 'Message Rewrite',
-    description: 'Clean up casual texts, keep the tone warm, and copy to your clipboard automatically.',
-    hint: 'Keep it short and kind',
-    icon: '💬',
-  },
-  {
-    id: 'email',
-    label: 'Email Draft',
-    description: 'Capture the intent, get a structured subject and body, then drop it straight into Gmail.',
-    hint: 'Add the context and recipients',
-    icon: '✉️',
-  },
-  {
-    id: 'calendar',
-    label: 'Calendar Parse',
-    description: 'Describe the meeting and get ready-to-schedule event details with reminders.',
-    hint: 'Time, location, goal',
-    icon: '📅',
-  },
-  {
-    id: 'memory',
-    label: 'Personal Memory',
-    description: 'Store facts about you, search them later, and keep everything organized by category.',
-    hint: 'Facts, names, routines',
-    icon: '🧠',
-  },
+  { id: 'text', label: 'Message', icon: '💬' },
+  { id: 'email', label: 'Email', icon: '✉️' },
+  { id: 'calendar', label: 'Calendar', icon: '📅' },
 ];
 
 function App() {
   const [mode, setMode] = useState<AssistantMode>('text');
-  const activeMode = MODES.find((item) => item.id === mode) ?? MODES[0];
+  const [input, setInput] = useState('');
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showKnowledge, setShowKnowledge] = useState(false);
+  const [calendarCreating, setCalendarCreating] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const renderAssistant = () => {
+  const {
+    isRecording,
+    isTranscribing,
+    error: recordingError,
+    startRecording,
+    stopRecording,
+  } = useAudioRecording();
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const handleVoiceToggle = async () => {
+    if (isRecording) {
+      try {
+        const transcription = await stopRecording();
+        setInput(transcription);
+        inputRef.current?.focus();
+      } catch {
+        console.error('Failed to transcribe');
+      }
+    } else {
+      await startRecording();
+    }
+  };
+
+  const generateId = () => Math.random().toString(36).substring(7);
+
+  const handleSubmit = async () => {
+    if (!input.trim() || loading) return;
+
+    const userMessage: Message = {
+      id: generateId(),
+      role: 'user',
+      content: input,
+      mode,
+      timestamp: new Date(),
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setInput('');
+    setLoading(true);
+
+    try {
+      let endpoint = '';
+      let body = {};
+
+      switch (mode) {
+        case 'text':
+          endpoint = '/api/ai/text';
+          body = { message: input };
+          break;
+        case 'email':
+          endpoint = '/api/ai/email';
+          body = { prompt: input };
+          break;
+        case 'calendar':
+          endpoint = '/api/ai/calendar';
+          body = { prompt: input };
+          break;
+        default:
+          endpoint = '/api/ai/text';
+          body = { message: input };
+      }
+
+      const response = await fetch(`${API_URL}${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) throw new Error('Request failed');
+
+      const data = await response.json();
+
+      let assistantContent = '';
+      if (mode === 'text') {
+        assistantContent = (data as TextResponse).rewritten;
+        // Auto-copy to clipboard
+        navigator.clipboard.writeText(assistantContent);
+      } else if (mode === 'email') {
+        const emailData = data as EmailResponse;
+        assistantContent = `**To:** ${emailData.to}\n**Subject:** ${emailData.subject}\n\n${emailData.body}`;
+      } else if (mode === 'calendar') {
+        const calData = data as CalendarResponse;
+        assistantContent = `**${calData.title}**\nStart: ${formatDateTime(calData.start)}\nEnd: ${formatDateTime(calData.end)}${calData.notes ? `\nNotes: ${calData.notes}` : ''}`;
+      }
+
+      const assistantMessage: Message = {
+        id: generateId(),
+        role: 'assistant',
+        content: assistantContent,
+        mode,
+        data,
+        timestamp: new Date(),
+      };
+
+      setMessages((prev) => [...prev, assistantMessage]);
+    } catch (error) {
+      const errorMessage: Message = {
+        id: generateId(),
+        role: 'assistant',
+        content: 'Sorry, something went wrong. Please try again.',
+        mode,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
+
+  const formatDateTime = (isoString: string) => {
+    const date = new Date(isoString);
+    return date.toLocaleString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  };
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+  };
+
+  const handleCreateCalendarEvent = async (messageId: string, data: CalendarResponse) => {
+    setCalendarCreating(messageId);
+    try {
+      const response = await fetch(`${API_URL}/api/calendar/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: data.title,
+          start: data.start,
+          end: data.end,
+          notes: data.notes,
+          reminderMinutes: data.reminderMinutesBefore,
+        }),
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === messageId
+              ? { ...m, content: m.content + '\n\n✅ Added to Google Calendar!' }
+              : m
+          )
+        );
+      } else if (result.needsAuth) {
+        window.open(result.authUrl, '_blank');
+      }
+    } catch {
+      console.error('Failed to create calendar event');
+    } finally {
+      setCalendarCreating(null);
+    }
+  };
+
+  const handleOpenGmail = (data: EmailResponse) => {
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(data.to)}&su=${encodeURIComponent(data.subject)}&body=${encodeURIComponent(data.body)}`;
+    window.open(gmailUrl, '_blank');
+  };
+
+  const getPlaceholder = () => {
     switch (mode) {
       case 'text':
-        return <TextAssistant />;
+        return 'Type a message to rewrite...';
       case 'email':
-        return <EmailAssistant />;
+        return 'Describe the email you want to write...';
       case 'calendar':
-        return <CalendarAssistant />;
-      case 'memory':
-        return <MemoryAssistant />;
+        return 'Describe the event to schedule...';
       default:
-        return <TextAssistant />;
+        return 'Type your message...';
     }
   };
 
   return (
-    <div className="app-shell">
-      <header className="hero">
-        <div className="hero-badges">
-          <span className="pill pill-live">Live workspace</span>
-          <span className="pill pill-soft">Voice dictation ready</span>
-          <span className="pill pill-outline">Clipboard auto-copy</span>
-        </div>
-        <h1>
-          A modern canvas for your assistant
-          <span className="hero-highlight"> across messages, email, calendar, and memory.</span>
-        </h1>
-        <p className="hero-subtitle">
-          Rewrite casual texts, draft clean emails, parse calendar requests, and remember personal context without
-          jumping between tools.
-        </p>
-        <div className="hero-metrics">
-          <div className="metric">
-            <div className="metric-number">4</div>
-            <div className="metric-label">Smart modes</div>
-          </div>
-          <div className="metric">
-            <div className="metric-number">Voice</div>
-            <div className="metric-label">Dictate anywhere</div>
-          </div>
-          <div className="metric">
-            <div className="metric-number">Share</div>
-            <div className="metric-label">Copy & send quickly</div>
-          </div>
-        </div>
+    <div className="chat-app">
+      {/* Header */}
+      <header className="chat-header">
+        <h1 className="chat-title">Assistant</h1>
+        <button
+          className={`knowledge-btn ${showKnowledge ? 'active' : ''}`}
+          onClick={() => setShowKnowledge(!showKnowledge)}
+        >
+          🧠 Knowledge
+        </button>
       </header>
 
-      <div className="workspace">
-        <aside className="mode-panel">
-          <div className="mode-panel-header">
-            <div>
-              <p className="eyebrow">Mode switcher</p>
-              <h3>Pick the assistant you need</h3>
-            </div>
-            <span className="pill pill-soft">Tap to switch</span>
+      {/* Knowledge Panel */}
+      {showKnowledge && (
+        <div className="knowledge-panel">
+          <div className="knowledge-content">
+            <h3>Personal Knowledge Base</h3>
+            <p>Store and search your personal information, facts, and context.</p>
+            <a href="/memory" className="knowledge-link">
+              Open Memory Manager →
+            </a>
           </div>
-          <div className="mode-list">
-            {MODES.map((item) => (
-              <button
-                key={item.id}
-                className={`mode-card ${mode === item.id ? 'active' : ''}`}
-                onClick={() => setMode(item.id)}
-                type="button"
-                aria-pressed={mode === item.id}
-              >
-                <div className="mode-icon">{item.icon}</div>
-                <div className="mode-copy">
-                  <div className="mode-label">{item.label}</div>
-                  <div className="mode-hint">{item.hint}</div>
-                </div>
-                <span className="mode-caret">↗</span>
-              </button>
-            ))}
-          </div>
-        </aside>
+        </div>
+      )}
 
-        <section className="assistant-panel">
-          <div className="panel-header">
-            <p className="eyebrow">Active mode</p>
-            <div className="panel-title-row">
-              <h2>{activeMode.label}</h2>
-              <span className="pill pill-outline">{activeMode.icon} {activeMode.id}</span>
+      {/* Messages Area */}
+      <div className="chat-messages">
+        {messages.length === 0 && (
+          <div className="chat-welcome">
+            <div className="welcome-icon">✨</div>
+            <h2>How can I help you today?</h2>
+            <p>Select a mode below and start typing or use voice input.</p>
+          </div>
+        )}
+
+        {messages.map((message) => (
+          <div key={message.id} className={`message ${message.role}`}>
+            <div className="message-bubble">
+              <div className="message-header">
+                <span className="message-mode">
+                  {MODES.find((m) => m.id === message.mode)?.icon}{' '}
+                  {MODES.find((m) => m.id === message.mode)?.label}
+                </span>
+              </div>
+              <div className="message-content">
+                {message.content.split('\n').map((line, i) => (
+                  <p key={i}>{line.startsWith('**') ? <strong>{line.replace(/\*\*/g, '')}</strong> : line}</p>
+                ))}
+              </div>
+
+              {/* Action buttons for assistant messages */}
+              {message.role === 'assistant' && message.data && (
+                <div className="message-actions">
+                  {message.mode === 'text' && (
+                    <button onClick={() => handleCopy((message.data as TextResponse).rewritten)}>
+                      📋 Copy
+                    </button>
+                  )}
+                  {message.mode === 'email' && (
+                    <>
+                      <button onClick={() => handleCopy((message.data as EmailResponse).body)}>
+                        📋 Copy Body
+                      </button>
+                      <button onClick={() => handleOpenGmail(message.data as EmailResponse)}>
+                        📧 Open Gmail
+                      </button>
+                    </>
+                  )}
+                  {message.mode === 'calendar' && !message.content.includes('✅') && (
+                    <button
+                      onClick={() => handleCreateCalendarEvent(message.id, message.data as CalendarResponse)}
+                      disabled={calendarCreating === message.id}
+                    >
+                      {calendarCreating === message.id ? '⏳ Creating...' : '📅 Add to Calendar'}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
-            <p className="panel-subtitle">{activeMode.description}</p>
           </div>
-          <div className="assistant-body">
-            {renderAssistant()}
+        ))}
+
+        {loading && (
+          <div className="message assistant">
+            <div className="message-bubble loading">
+              <div className="typing-indicator">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </div>
           </div>
-        </section>
+        )}
+
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input Area */}
+      <div className="chat-input-area">
+        {/* Mode Selector */}
+        <div className="mode-selector">
+          {MODES.map((m) => (
+            <button
+              key={m.id}
+              className={`mode-btn ${mode === m.id ? 'active' : ''}`}
+              onClick={() => setMode(m.id)}
+            >
+              <span className="mode-icon">{m.icon}</span>
+              <span className="mode-label">{m.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Input Row */}
+        <div className="input-row">
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={getPlaceholder()}
+            disabled={loading || isTranscribing}
+            rows={1}
+            className={isRecording ? 'recording' : ''}
+          />
+          <button
+            className={`voice-btn ${isRecording ? 'recording' : ''} ${isTranscribing ? 'transcribing' : ''}`}
+            onClick={handleVoiceToggle}
+            disabled={isTranscribing || loading}
+          >
+            {isTranscribing ? '⏳' : isRecording ? '⏹' : '🎤'}
+          </button>
+          <button
+            className="send-btn"
+            onClick={handleSubmit}
+            disabled={!input.trim() || loading}
+          >
+            {loading ? '...' : '→'}
+          </button>
+        </div>
+
+        {(isRecording || recordingError) && (
+          <div className="input-status">
+            {isRecording && <span className="recording-status">🔴 Recording...</span>}
+            {recordingError && <span className="error-status">{recordingError}</span>}
+          </div>
+        )}
       </div>
     </div>
   );
