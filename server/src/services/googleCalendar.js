@@ -59,7 +59,7 @@ function getCredentials() {
 }
 
 /**
- * Load or create OAuth2 client
+ * Load or create OAuth2 client with automatic token refresh
  */
 async function authorize() {
   const { client_id, client_secret, redirect_uri } = getCredentials();
@@ -75,8 +75,43 @@ async function authorize() {
     try {
       const token = JSON.parse(process.env.GOOGLE_TOKEN);
       console.log('✅ Successfully parsed GOOGLE_TOKEN from environment');
-      oAuth2Client.setCredentials(token);
-      return oAuth2Client;
+
+      // Check if token is expired
+      const now = Date.now();
+      const expiryDate = token.expiry_date || 0;
+      const isExpired = now >= expiryDate;
+
+      if (isExpired && token.refresh_token) {
+        console.log('🔄 Token expired, refreshing with refresh_token...');
+        oAuth2Client.setCredentials({
+          refresh_token: token.refresh_token
+        });
+
+        // Force refresh the access token
+        try {
+          const { credentials } = await oAuth2Client.refreshAccessToken();
+          console.log('✅ Token refreshed successfully');
+          console.log('📅 New expiry:', new Date(credentials.expiry_date).toISOString());
+
+          // Log the new token so it can be updated in environment variables
+          const newToken = {
+            ...credentials,
+            refresh_token: token.refresh_token // Keep the original refresh token
+          };
+          console.log('\n🔑 IMPORTANT: Update GOOGLE_TOKEN environment variable with this new token:');
+          console.log(JSON.stringify(newToken));
+          console.log('\n');
+
+          oAuth2Client.setCredentials(newToken);
+          return oAuth2Client;
+        } catch (refreshError) {
+          console.error('❌ Failed to refresh token:', refreshError.message);
+          throw new Error('Token expired and refresh failed. Please re-authorize.');
+        }
+      } else {
+        oAuth2Client.setCredentials(token);
+        return oAuth2Client;
+      }
     } catch (error) {
       console.error('❌ Failed to parse GOOGLE_TOKEN from environment:', error);
       throw new Error('Invalid GOOGLE_TOKEN format in environment variables');
