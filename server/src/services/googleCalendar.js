@@ -155,6 +155,7 @@ export function getAuthUrl() {
 
 /**
  * Save token after authorization
+ * Returns the tokens so they can be displayed to the user
  */
 export function saveToken(code) {
   const { client_id, client_secret, redirect_uri } = getCredentials();
@@ -180,7 +181,8 @@ export function saveToken(code) {
     console.log(JSON.stringify(tokens));
     console.log('\n');
 
-    return oAuth2Client;
+    // Return both the client and tokens
+    return { oAuth2Client, tokens };
   });
 }
 

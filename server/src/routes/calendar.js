@@ -73,6 +73,20 @@ router.post('/create', async (req, res) => {
   }
 });
 
+// GET /api/calendar/reauthorize
+// Get auth URL to re-authorize (even if already authorized)
+router.get('/reauthorize', (req, res) => {
+  try {
+    const authUrl = getAuthUrl();
+    res.redirect(authUrl);
+  } catch (error) {
+    res.status(500).json({
+      error: error.message,
+      message: 'Failed to generate authorization URL',
+    });
+  }
+});
+
 // GET /api/calendar/auth-status
 // Check if Google Calendar is authorized
 router.get('/auth-status', (req, res) => {
@@ -116,15 +130,29 @@ router.get('/oauth-callback', async (req, res) => {
       `);
     }
 
-    await saveToken(code);
+    const { tokens } = await saveToken(code);
+    const tokenJson = JSON.stringify(tokens);
 
     res.send(`
       <html>
-        <body style="font-family: Arial; padding: 40px; text-align: center;">
-          <h1 style="color: #28a745;">✅ Authorization Successful!</h1>
-          <p>You can now close this window and return to the app.</p>
-          <p>Your Google Calendar is now connected.</p>
-          <a href="http://localhost:3000" style="display: inline-block; margin-top: 20px; padding: 12px 24px; background: #007bff; color: white; text-decoration: none; border-radius: 6px;">Return to App</a>
+        <body style="font-family: Arial; padding: 40px; max-width: 800px; margin: 0 auto;">
+          <h1 style="color: #28a745; text-align: center;">✅ Authorization Successful!</h1>
+          <p style="text-align: center;">Your Google Calendar is now connected.</p>
+
+          <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; margin: 20px 0;">
+            <h3 style="margin-top: 0;">🔑 Update GOOGLE_TOKEN in Vercel:</h3>
+            <p>Copy the token below and update your <code>GOOGLE_TOKEN</code> environment variable in Vercel:</p>
+            <textarea id="token" readonly style="width: 100%; height: 150px; font-family: monospace; font-size: 12px; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">${tokenJson}</textarea>
+            <button onclick="navigator.clipboard.writeText(document.getElementById('token').value); this.textContent='Copied!'" style="margin-top: 10px; padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+              Copy Token
+            </button>
+          </div>
+
+          <div style="text-align: center;">
+            <a href="https://vercel.com/strongman1380s-projects/assistant-app/settings/environment-variables" target="_blank" style="display: inline-block; margin-top: 20px; padding: 12px 24px; background: #000; color: white; text-decoration: none; border-radius: 6px;">
+              Go to Vercel Environment Variables
+            </a>
+          </div>
         </body>
       </html>
     `);
