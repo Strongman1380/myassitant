@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "framework": null,
+  "devCommand": "",
+  "functions": {
+    "api/**/*.js": {
+      "memory": 1024,
+      "maxDuration": 60
+    }
+  }
+}

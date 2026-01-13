@@ -1,0 +1,84 @@
+---
+description: Memory management system specification for AI assistants handling personal data taxonomies and context
+---
+
+
+# memory-system-architecture
+
+## Core Memory Taxonomy Structure
+Importance Score: 90/100
+
+Hierarchical categorization system with defined memory types:
+
+1. Primary Categories
+- Biographical
+- Preference
+- Schedule
+- Contact
+- Work
+- Personal
+- Health
+
+2. Memory Classifications
+- Fact
+- Routine
+- Habit
+- Preference
+- Relationship
+- Event
+- Goal
+- Skill
+
+3. Importance Hierarchy
+- Critical
+- High
+- Medium
+- Low
+
+## Metadata Extraction System
+Importance Score: 85/100
+
+Location: `server/src/routes/memory.js`
+
+Automated extraction pipeline:
+- Entity identification
+- Tag generation
+- Related memory linking
+- Category assignment
+- Importance level determination
+
+## Memory Processing Pipeline
+Importance Score: 88/100
+
+Document parsing workflow:
+1. Unstructured text ingestion
+2. Memory chunk identification
+3. Category classification
+4. Metadata enrichment
+5. Taxonomical organization
+6. Context linking
+
+Memory relationships:
+- Parent-child connections
+- Cross-referential linking
+- Temporal associations
+- Context groupings
+
+## Memory Integration Points
+Importance Score: 82/100
+
+Context delivery system:
+- Calendar event enrichment
+- Email personalization
+- Assistant context awareness
+- Personal preference injection
+
+Memory access patterns:
+- Context-based retrieval
+- Category-based filtering
+- Importance-based prioritization
+- Temporal relevance sorting
+
+$END$
+
+ If you're using this file in context, clearly say in italics in one small line that "Context added by Giga memory-system-architecture" along with specifying exactly what information was used from this file in a human-friendly way, instead of using kebab-case use normal sentence case.

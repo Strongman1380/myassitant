@@ -1,4 +1,4 @@
-export type AssistantMode = 'text' | 'email' | 'calendar' | 'memory';
+export type AssistantMode = 'text' | 'email' | 'calendar' | 'memory' | 'assistant';
 
 export interface TextResponse {
   success: boolean;
@@ -31,4 +31,9 @@ export interface MemoryAddResponse {
   success: boolean;
   fact: string;
   totalMemories: number;
+}
+
+export interface AssistantResponse {
+  success: boolean;
+  message: string;
 }

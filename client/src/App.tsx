@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { AssistantMode, TextResponse, EmailResponse, CalendarResponse } from './types';
+import { AssistantMode, TextResponse, EmailResponse, CalendarResponse, AssistantResponse } from './types';
 import { useAudioRecording } from './hooks/useAudioRecording';
 import { API_URL } from './config';
 import './App.css';
@@ -9,7 +9,7 @@ type Message = {
   role: 'user' | 'assistant';
   content: string;
   mode: AssistantMode;
-  data?: TextResponse | EmailResponse | CalendarResponse;
+  data?: TextResponse | EmailResponse | CalendarResponse | AssistantResponse;
   timestamp: Date;
 };
 
@@ -18,13 +18,14 @@ const MODES: Array<{
   label: string;
   icon: string;
 }> = [
+  { id: 'assistant', label: 'Assistant', icon: '🤖' },
   { id: 'text', label: 'Message', icon: '💬' },
   { id: 'email', label: 'Email', icon: '✉️' },
   { id: 'calendar', label: 'Calendar', icon: '📅' },
 ];
 
 function App() {
-  const [mode, setMode] = useState<AssistantMode>('text');
+  const [mode, setMode] = useState<AssistantMode>('assistant');
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
@@ -85,6 +86,10 @@ function App() {
       let body = {};
 
       switch (mode) {
+        case 'assistant':
+          endpoint = '/api/ai/assistant';
+          body = { message: input };
+          break;
         case 'text':
           endpoint = '/api/ai/text';
           body = { message: input };
@@ -98,7 +103,7 @@ function App() {
           body = { prompt: input };
           break;
         default:
-          endpoint = '/api/ai/text';
+          endpoint = '/api/ai/assistant';
           body = { message: input };
       }
 
@@ -113,7 +118,9 @@ function App() {
       const data = await response.json();
 
       let assistantContent = '';
-      if (mode === 'text') {
+      if (mode === 'assistant') {
+        assistantContent = (data as AssistantResponse).message;
+      } else if (mode === 'text') {
         assistantContent = (data as TextResponse).rewritten;
         // Auto-copy to clipboard
         navigator.clipboard.writeText(assistantContent);
@@ -212,6 +219,8 @@ function App() {
 
   const getPlaceholder = () => {
     switch (mode) {
+      case 'assistant':
+        return 'Ask me to send emails, check calendar, create events...';
       case 'text':
         return 'Type a message to rewrite...';
       case 'email':

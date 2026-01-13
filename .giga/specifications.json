@@ -1,0 +1,22 @@
+[
+  {
+    "fileName": "main-overview.mdc",
+    "description": "Complete system overview with architecture and key components, focusing on the memory-first design and integration patterns between AI, memory, and communication systems"
+  },
+  {
+    "fileName": "memory-system-architecture.mdc",
+    "description": "Detailed documentation of the memory management system, including taxonomy structure, categorization algorithms, and metadata extraction processes"
+  },
+  {
+    "fileName": "data-models-relationships.mdc",
+    "description": "Comprehensive documentation of data models for memories, events, and user data, including relationships, schemas, and data flow between components"
+  },
+  {
+    "fileName": "ai-integration-flows.mdc",
+    "description": "Technical documentation of AI integration patterns, context awareness implementation, and data flow between memory system and various services (email, calendar, voice)"
+  },
+  {
+    "fileName": "memory-extraction-algorithms.mdc",
+    "description": "Detailed documentation of memory extraction algorithms, document parsing logic, and automated categorization systems with taxonomy rules"
+  }
+]
