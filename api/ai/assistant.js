@@ -53,6 +53,7 @@ You have access to the following integrations through Pica tools:
 - Google Calendar: Create events, list events, update events, delete events
 - Outlook: Send emails, read emails, search emails
 - Outlook Calendar: Create events, list events, update events, delete events
+- Google Drive: Browse files, read document contents, ingest documents into memory
 
 INSTRUCTIONS:
 1. When the user asks you to send an email, USE the Gmail or Outlook tool to actually send it

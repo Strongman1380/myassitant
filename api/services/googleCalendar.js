@@ -11,8 +11,11 @@ const __dirname = dirname(__filename);
 const CREDENTIALS_PATH = path.join(__dirname, '../../credentials.json');
 const TOKEN_PATH = path.join(__dirname, '../../token.json');
 
-// Scopes for Google Calendar API
-const SCOPES = ['https://www.googleapis.com/auth/calendar'];
+// Scopes for Google Calendar + Drive API
+const SCOPES = [
+  'https://www.googleapis.com/auth/calendar',
+  'https://www.googleapis.com/auth/drive.readonly'
+];
 
 /**
  * Get credentials from either environment variables or file

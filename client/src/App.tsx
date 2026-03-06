@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { AssistantMode, TextResponse, EmailResponse, CalendarResponse, AssistantResponse } from './types';
 import { useAudioRecording } from './hooks/useAudioRecording';
+import { MemoryAssistant } from './components/MemoryAssistant';
+import { DriveBrowser } from './components/DriveBrowser';
+import { PicaIntegrations } from './components/PicaIntegrations';
 import { API_URL } from './config';
 import './App.css';
 
@@ -30,6 +33,8 @@ function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [showKnowledge, setShowKnowledge] = useState(false);
+  const [showDrive, setShowDrive] = useState(false);
+  const [showIntegrations, setShowIntegrations] = useState(false);
   const [calendarCreating, setCalendarCreating] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -88,7 +93,12 @@ function App() {
       switch (mode) {
         case 'assistant':
           endpoint = '/api/ai/assistant';
-          body = { message: input };
+          // Include conversation history for context
+          const history = messages
+            .filter(m => m.mode === 'assistant')
+            .slice(-10) // Last 10 messages for context
+            .map(m => ({ role: m.role, content: m.content }));
+          body = { message: input, history };
           break;
         case 'text':
           endpoint = '/api/ai/text';
@@ -237,23 +247,51 @@ function App() {
       {/* Header */}
       <header className="chat-header">
         <h1 className="chat-title">Assistant</h1>
-        <button
-          className={`knowledge-btn ${showKnowledge ? 'active' : ''}`}
-          onClick={() => setShowKnowledge(!showKnowledge)}
-        >
-          🧠 Knowledge
-        </button>
+        <div className="header-actions">
+          <button
+            className={`header-btn ${showIntegrations ? 'active' : ''}`}
+            onClick={() => { setShowIntegrations(!showIntegrations); setShowDrive(false); setShowKnowledge(false); }}
+          >
+            🔗 Integrations
+          </button>
+          <button
+            className={`header-btn ${showDrive ? 'active' : ''}`}
+            onClick={() => { setShowDrive(!showDrive); setShowKnowledge(false); setShowIntegrations(false); }}
+          >
+            📂 Drive
+          </button>
+          <button
+            className={`header-btn ${showKnowledge ? 'active' : ''}`}
+            onClick={() => { setShowKnowledge(!showKnowledge); setShowDrive(false); setShowIntegrations(false); }}
+          >
+            🧠 Knowledge
+          </button>
+        </div>
       </header>
+
+      {/* Integrations Panel */}
+      {showIntegrations && (
+        <div className="knowledge-panel">
+          <div className="knowledge-content">
+            <PicaIntegrations />
+          </div>
+        </div>
+      )}
+
+      {/* Drive Panel */}
+      {showDrive && (
+        <div className="knowledge-panel">
+          <div className="knowledge-content">
+            <DriveBrowser />
+          </div>
+        </div>
+      )}
 
       {/* Knowledge Panel */}
       {showKnowledge && (
         <div className="knowledge-panel">
           <div className="knowledge-content">
-            <h3>Personal Knowledge Base</h3>
-            <p>Store and search your personal information, facts, and context.</p>
-            <a href="/memory" className="knowledge-link">
-              Open Memory Manager →
-            </a>
+            <MemoryAssistant />
           </div>
         </div>
       )}

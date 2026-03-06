@@ -10,4 +10,7 @@ export const config = {
   microsoftClientSecret: process.env.MICROSOFT_CLIENT_SECRET || '',
   microsoftUserEmail: process.env.MICROSOFT_USER_EMAIL || '',
   apiUrl: process.env.API_URL || '',
+  googleSearchApiKey: process.env.GOOGLE_SEARCH_API_KEY || '',
+  googleSearchEngineId: process.env.GOOGLE_SEARCH_ENGINE_ID || '',
+  picaSecretKey: process.env.PICA_SECRET_KEY || '',
 };
