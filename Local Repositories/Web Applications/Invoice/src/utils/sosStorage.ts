@@ -9,6 +9,7 @@ export function newSOSTimesheet(staffName = ''): Timesheet {
     pay_period_start: '',
     pay_period_end: '',
     entries: [],
+    invoice_items: [],
   };
 }
 

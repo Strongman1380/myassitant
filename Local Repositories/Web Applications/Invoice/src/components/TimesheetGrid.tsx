@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Timesheet, TimesheetEntry } from '../types';
+import { Timesheet, TimesheetEntry, InvoiceItem } from '../types';
 import './TimesheetGrid.css';
 
 const BILLING_CODES = [
@@ -18,8 +18,25 @@ function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
+function parseTime(val: string): number | null {
+  if (!val) return null;
+  const parts = val.split(':');
+  if (parts.length !== 2) return null;
+  const h = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10);
+  if (isNaN(h) || isNaN(m)) return null;
+  return h + m / 60;
+}
+
+function calcHours(timeIn: string, timeOut: string): number {
+  const start = parseTime(timeIn);
+  const end = parseTime(timeOut);
+  if (start === null || end === null) return 0;
+  const diff = end - start;
+  return diff > 0 ? Math.round(diff * 100) / 100 : 0;
+}
+
 function buildEmptyEntry(payPeriodStart: string): TimesheetEntry {
-  // Default date to the pay period start
   const today = payPeriodStart || new Date().toLocaleDateString('en-US', {
     month: '2-digit', day: '2-digit', year: 'numeric'
   });
@@ -27,12 +44,28 @@ function buildEmptyEntry(payPeriodStart: string): TimesheetEntry {
     id: generateId(),
     date: today,
     billing_code: '',
+    time_in: '',
+    time_out: '',
     hours: 0,
     client: '',
     direct: false,
     indirect: false,
     mileage: 0,
     notes: '',
+  };
+}
+
+function buildEmptyInvoiceItem(payPeriodStart: string): InvoiceItem {
+  const today = payPeriodStart || new Date().toLocaleDateString('en-US', {
+    month: '2-digit', day: '2-digit', year: 'numeric'
+  });
+  return {
+    id: generateId(),
+    date: today,
+    description: '',
+    quantity: 1,
+    rate: 0,
+    amount: 0,
   };
 }
 
@@ -44,8 +77,19 @@ interface TimesheetGridProps {
 export function TimesheetGrid({ timesheet, onUpdate }: TimesheetGridProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
 
+  // Ensure invoice_items exists for older saved timesheets
+  const invoiceItems = timesheet.invoice_items || [];
+
   const updateEntry = (id: string, patch: Partial<TimesheetEntry>) => {
-    const entries = timesheet.entries.map(e => e.id === id ? { ...e, ...patch } : e);
+    const entries = timesheet.entries.map(e => {
+      if (e.id !== id) return e;
+      const updated = { ...e, ...patch };
+      // Auto-calculate hours when time_in or time_out changes
+      if ('time_in' in patch || 'time_out' in patch) {
+        updated.hours = calcHours(updated.time_in, updated.time_out);
+      }
+      return updated;
+    });
     onUpdate({ ...timesheet, entries });
   };
 
@@ -60,8 +104,32 @@ export function TimesheetGrid({ timesheet, onUpdate }: TimesheetGridProps) {
     setEditingId(newEntry.id);
   };
 
+  // Invoice helpers
+  const updateInvoiceItem = (id: string, patch: Partial<InvoiceItem>) => {
+    const items = invoiceItems.map(item => {
+      if (item.id !== id) return item;
+      const updated = { ...item, ...patch };
+      if ('quantity' in patch || 'rate' in patch) {
+        updated.amount = Math.round((updated.quantity || 0) * (updated.rate || 0) * 100) / 100;
+      }
+      return updated;
+    });
+    onUpdate({ ...timesheet, invoice_items: items });
+  };
+
+  const deleteInvoiceItem = (id: string) => {
+    const items = invoiceItems.filter(item => item.id !== id);
+    onUpdate({ ...timesheet, invoice_items: items });
+  };
+
+  const addInvoiceRow = () => {
+    const newItem = buildEmptyInvoiceItem(timesheet.pay_period_start);
+    onUpdate({ ...timesheet, invoice_items: [...invoiceItems, newItem] });
+  };
+
   const totalHours = timesheet.entries.reduce((sum, e) => sum + (e.hours || 0), 0);
   const totalMileage = timesheet.entries.reduce((sum, e) => sum + (e.mileage || 0), 0);
+  const invoiceTotal = invoiceItems.reduce((sum, item) => sum + (item.amount || 0), 0);
 
   return (
     <div className="ts-wrapper">
@@ -84,13 +152,16 @@ export function TimesheetGrid({ timesheet, onUpdate }: TimesheetGridProps) {
         />
       </div>
 
+      {/* ═══════ TIMESHEET GRID ═══════ */}
       <div className="ts-table-scroll">
         <table className="ts-table">
           <thead>
             <tr>
               <th>Date</th>
               <th>Billing Code</th>
-              <th>Time</th>
+              <th>Time In</th>
+              <th>Time Out</th>
+              <th>Hours</th>
               <th>Client</th>
               <th className="ts-center">Direct</th>
               <th className="ts-center">Indirect</th>
@@ -102,7 +173,7 @@ export function TimesheetGrid({ timesheet, onUpdate }: TimesheetGridProps) {
           <tbody>
             {timesheet.entries.length === 0 && (
               <tr>
-                <td colSpan={9} className="ts-empty">No entries yet. Click "+ Add Row" to begin.</td>
+                <td colSpan={11} className="ts-empty">No entries yet. Click "+ Add Row" to begin.</td>
               </tr>
             )}
             {timesheet.entries.map(entry => {
@@ -147,17 +218,33 @@ export function TimesheetGrid({ timesheet, onUpdate }: TimesheetGridProps) {
                     )}
                   </td>
 
-                  {/* Time (hours) */}
+                  {/* Time In */}
                   <td>
                     <input
-                      type="number"
-                      value={entry.hours || ''}
-                      onChange={e => updateEntry(entry.id, { hours: parseFloat(e.target.value) || 0 })}
-                      min="0"
-                      step="0.5"
-                      className="ts-input ts-hours"
-                      placeholder="0"
+                      type="text"
+                      value={entry.time_in || ''}
+                      onChange={e => updateEntry(entry.id, { time_in: e.target.value })}
+                      placeholder="8:00"
+                      className="ts-input ts-time"
                     />
+                  </td>
+
+                  {/* Time Out */}
+                  <td>
+                    <input
+                      type="text"
+                      value={entry.time_out || ''}
+                      onChange={e => updateEntry(entry.id, { time_out: e.target.value })}
+                      placeholder="5:00"
+                      className="ts-input ts-time"
+                    />
+                  </td>
+
+                  {/* Hours (auto-calculated) */}
+                  <td className="ts-center">
+                    <span className="ts-hours-display">
+                      {entry.hours ? entry.hours.toFixed(2) : '—'}
+                    </span>
                   </td>
 
                   {/* Client */}
@@ -237,8 +324,8 @@ export function TimesheetGrid({ timesheet, onUpdate }: TimesheetGridProps) {
           </tbody>
           <tfoot>
             <tr className="ts-totals">
-              <td colSpan={2} className="ts-totals-label">TOTALS</td>
-              <td className="ts-center ts-total-val">{totalHours}</td>
+              <td colSpan={4} className="ts-totals-label">TOTALS</td>
+              <td className="ts-center ts-total-val">{totalHours.toFixed(2)}</td>
               <td colSpan={3}></td>
               <td className="ts-center ts-total-val">{totalMileage > 0 ? totalMileage : ''}</td>
               <td colSpan={2}></td>
@@ -249,6 +336,100 @@ export function TimesheetGrid({ timesheet, onUpdate }: TimesheetGridProps) {
 
       <div className="ts-footer-actions">
         <button onClick={addRow} className="ts-btn-add">+ Add Row</button>
+      </div>
+
+      {/* ═══════ INVOICE / SERVICES PERFORMED ═══════ */}
+      <div className="ts-invoice-section">
+        <h3 className="ts-invoice-title">Invoice – Services Performed</h3>
+        <div className="ts-table-scroll">
+          <table className="ts-table ts-invoice-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description of Service</th>
+                <th className="ts-center">Qty</th>
+                <th className="ts-center">Rate ($)</th>
+                <th className="ts-center">Amount ($)</th>
+                <th className="ts-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {invoiceItems.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="ts-empty">No invoice items yet. Click "+ Add Item" to begin.</td>
+                </tr>
+              )}
+              {invoiceItems.map(item => (
+                <tr key={item.id}>
+                  <td>
+                    <input
+                      type="text"
+                      value={item.date}
+                      onChange={e => updateInvoiceItem(item.id, { date: e.target.value })}
+                      placeholder="MM/DD/YYYY"
+                      className="ts-input ts-date"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      value={item.description}
+                      onChange={e => updateInvoiceItem(item.id, { description: e.target.value })}
+                      placeholder="Describe the service performed..."
+                      className="ts-input ts-description"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      value={item.quantity || ''}
+                      onChange={e => updateInvoiceItem(item.id, { quantity: parseFloat(e.target.value) || 0 })}
+                      min="0"
+                      step="0.5"
+                      className="ts-input ts-qty"
+                      placeholder="1"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      value={item.rate || ''}
+                      onChange={e => updateInvoiceItem(item.id, { rate: parseFloat(e.target.value) || 0 })}
+                      min="0"
+                      step="0.01"
+                      className="ts-input ts-rate"
+                      placeholder="0.00"
+                    />
+                  </td>
+                  <td className="ts-center">
+                    <span className="ts-amount-display">
+                      {item.amount ? `$${item.amount.toFixed(2)}` : '—'}
+                    </span>
+                  </td>
+                  <td className="ts-center ts-actions">
+                    <button
+                      onClick={() => deleteInvoiceItem(item.id)}
+                      className="ts-btn-delete"
+                      title="Delete item"
+                    >
+                      ✕
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="ts-totals">
+                <td colSpan={4} className="ts-totals-label">INVOICE TOTAL</td>
+                <td className="ts-center ts-total-val">${invoiceTotal.toFixed(2)}</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <div className="ts-footer-actions">
+          <button onClick={addInvoiceRow} className="ts-btn-add ts-btn-add-invoice">+ Add Item</button>
+        </div>
       </div>
     </div>
   );

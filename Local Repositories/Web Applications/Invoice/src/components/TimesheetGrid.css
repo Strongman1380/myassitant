@@ -133,11 +133,16 @@
 }
 
 /* Column widths */
-.ts-date       { width: 100px; }
-.ts-hours      { width: 60px; text-align: center; }
-.ts-client     { width: 180px; }
-.ts-mileage    { width: 70px; text-align: center; }
-.ts-notes      { width: 100%; }
+.ts-date        { width: 100px; }
+.ts-time        { width: 70px; text-align: center; }
+.ts-hours-display { font-weight: 600; color: #1a1a2e; font-size: 13px; }
+.ts-client      { width: 180px; }
+.ts-mileage     { width: 70px; text-align: center; }
+.ts-notes       { width: 100%; }
+.ts-description { width: 100%; }
+.ts-qty         { width: 60px; text-align: center; }
+.ts-rate        { width: 80px; text-align: center; }
+.ts-amount-display { font-weight: 600; color: #1a1a2e; font-size: 13px; }
 
 /* Checkbox */
 .ts-checkbox {
@@ -195,4 +200,30 @@
 
 .ts-btn-add:hover {
   background: #4338ca;
+}
+
+/* ═══════ Invoice Section ═══════ */
+.ts-invoice-section {
+  margin-top: 36px;
+  padding-top: 24px;
+  border-top: 2px solid #1a1a2e;
+}
+
+.ts-invoice-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 16px;
+}
+
+.ts-invoice-table {
+  min-width: 700px;
+}
+
+.ts-btn-add-invoice {
+  background: #059669;
+}
+
+.ts-btn-add-invoice:hover {
+  background: #047857;
 }
