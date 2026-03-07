@@ -10,6 +10,14 @@ export type Day = typeof DAYS[number];
 
 export type WeekDays = Record<Day, DayEntry>;
 
+export interface HBHInvoiceItem {
+  id: string;
+  date: string;             // MM/DD/YYYY
+  description: string;      // what was done
+  hours: number;            // hours spent
+  notes: string;            // additional details
+}
+
 export interface HBHTimesheet {
   id: string;
   employeeName: string;
@@ -19,5 +27,6 @@ export interface HBHTimesheet {
   pickupCheck: string;
   signatureDataUrl: string; // base64 canvas PNG or empty string
   signatureDate: string;
+  invoiceItems: HBHInvoiceItem[];
   savedAt: string;          // ISO timestamp
 }

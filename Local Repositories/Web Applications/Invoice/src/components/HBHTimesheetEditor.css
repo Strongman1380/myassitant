@@ -357,6 +357,137 @@
 }
 
 /* ═══════════════════════════════════════════
+   INVOICE / DAILY ACTIVITY LOG
+═══════════════════════════════════════════ */
+.tc-invoice {
+  margin-top: 24px;
+  border-top: 2px solid #000;
+  padding-top: 16px;
+}
+
+.tc-invoice-title {
+  font-size: 14px;
+  font-weight: 800;
+  text-transform: uppercase;
+  text-align: center;
+  margin: 0 0 12px 0;
+  letter-spacing: 0.05em;
+}
+
+.tc-invoice-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 2px solid #000;
+}
+
+.tc-invoice-table th,
+.tc-invoice-table td {
+  border: 1px solid #000;
+  padding: 6px 8px;
+  font-size: 11px;
+  vertical-align: middle;
+}
+
+.tc-invoice-table th {
+  background: #f5f5f5;
+  font-weight: 800;
+  font-size: 10px;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 8px 6px;
+}
+
+.tc-inv-date { width: 100px; }
+.tc-inv-desc { }
+.tc-inv-hrs { width: 70px; text-align: center; }
+.tc-inv-notes { width: 200px; }
+.tc-inv-actions { width: 50px; text-align: center; }
+
+.tc-inv-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 2px;
+  outline: none;
+  font-family: inherit;
+}
+
+.tc-inv-input:focus {
+  background: #f0f7ff;
+}
+
+.tc-inv-hrs-input {
+  text-align: center;
+  font-weight: 700;
+}
+
+.tc-inv-empty {
+  text-align: center;
+  color: #888;
+  font-style: italic;
+  padding: 16px !important;
+}
+
+.tc-inv-totals {
+  background: #f5f5f5;
+}
+
+.tc-inv-totals-label {
+  text-align: right;
+  font-weight: 800;
+  font-size: 11px;
+  padding-right: 12px !important;
+}
+
+.tc-inv-totals-val {
+  text-align: center;
+  font-weight: 800;
+  font-size: 12px;
+}
+
+.tc-inv-delete {
+  background: #e74c3c;
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+.tc-inv-delete:hover {
+  background: #c0392b;
+}
+
+.tc-inv-add-row {
+  margin-top: 10px;
+  text-align: center;
+}
+
+.tc-inv-add-btn {
+  background: #27ae60;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 20px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tc-inv-add-btn:hover {
+  background: #219a52;
+}
+
+/* ═══════════════════════════════════════════
    PRINT STYLES
 ═══════════════════════════════════════════ */
 .print-only {
@@ -426,4 +557,22 @@
 
   .tc-sig-cursive { font-size: 22px !important; }
   .tc-sig-img { max-height: 48px !important; }
+
+  /* Invoice prints on same page or next page */
+  .tc-invoice {
+    page-break-inside: avoid;
+  }
+
+  .tc-invoice-table th {
+    background: #f5f5f5 !important;
+  }
+
+  .tc-inv-input {
+    border: none !important;
+    padding: 2px !important;
+  }
+
+  .tc-inv-totals {
+    background: #f5f5f5 !important;
+  }
 }

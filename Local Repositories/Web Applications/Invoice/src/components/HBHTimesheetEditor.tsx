@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { HBHTimesheet, Day, DAYS } from '../types/hbh';
+import { HBHTimesheet, HBHInvoiceItem, Day, DAYS } from '../types/hbh';
 import { calcWeek, splitHM, fmtHM } from '../utils/timesheetCalc';
 import { SignaturePad } from './SignaturePad';
 import './HBHTimesheetEditor.css';
@@ -38,9 +38,40 @@ function buildHM(h: string, m: string): string {
   return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
 }
 
+function generateId(): string {
+  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
+
 export function HBHTimesheetEditor({ ts, onChange, onSave, onBack }: Props) {
   const printRef = useRef<HTMLDivElement>(null);
   const calc = calcWeek(ts.days);
+
+  // Ensure invoiceItems exists for older saved timesheets
+  const invoiceItems = ts.invoiceItems || [];
+
+  function addInvoiceItem() {
+    const newItem: HBHInvoiceItem = {
+      id: generateId(),
+      date: '',
+      description: '',
+      hours: 0,
+      notes: '',
+    };
+    onChange({ ...ts, invoiceItems: [...invoiceItems, newItem] });
+  }
+
+  function updateInvoiceItem(id: string, patch: Partial<HBHInvoiceItem>) {
+    const items = invoiceItems.map(item =>
+      item.id === id ? { ...item, ...patch } : item
+    );
+    onChange({ ...ts, invoiceItems: items });
+  }
+
+  function deleteInvoiceItem(id: string) {
+    onChange({ ...ts, invoiceItems: invoiceItems.filter(item => item.id !== id) });
+  }
+
+  const totalInvoiceHours = invoiceItems.reduce((sum, item) => sum + (item.hours || 0), 0);
 
   function setDayTime(day: Day, field: keyof (typeof ts.days)[Day], part: 'h' | 'm', value: string) {
     const current = ts.days[day][field];
@@ -308,6 +339,92 @@ export function HBHTimesheetEditor({ ts, onChange, onSave, onBack }: Props) {
             </div>
             <div className="tc-sig-line"></div>
             <div className="tc-sig-label">DATE</div>
+          </div>
+        </div>
+
+        {/* ═══════ INVOICE — DAILY ACTIVITY LOG ═══════ */}
+        <div className="tc-invoice">
+          <h3 className="tc-invoice-title">Daily Activity Log / Invoice</h3>
+          <table className="tc-invoice-table">
+            <thead>
+              <tr>
+                <th className="tc-inv-date">Date</th>
+                <th className="tc-inv-desc">Description of Work Performed</th>
+                <th className="tc-inv-hrs">Hours</th>
+                <th className="tc-inv-notes">Notes</th>
+                <th className="tc-inv-actions no-print">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {invoiceItems.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="tc-inv-empty">
+                    No entries yet. Click "+ Add Entry" to log your daily activities.
+                  </td>
+                </tr>
+              )}
+              {invoiceItems.map(item => (
+                <tr key={item.id}>
+                  <td>
+                    <input
+                      type="text"
+                      value={item.date}
+                      onChange={e => updateInvoiceItem(item.id, { date: e.target.value })}
+                      placeholder="MM/DD/YYYY"
+                      className="tc-inv-input tc-inv-date-input"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      value={item.description}
+                      onChange={e => updateInvoiceItem(item.id, { description: e.target.value })}
+                      placeholder="What did you do?"
+                      className="tc-inv-input tc-inv-desc-input"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      value={item.hours || ''}
+                      onChange={e => updateInvoiceItem(item.id, { hours: parseFloat(e.target.value) || 0 })}
+                      placeholder="0"
+                      min="0"
+                      step="0.25"
+                      className="tc-inv-input tc-inv-hrs-input"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      value={item.notes}
+                      onChange={e => updateInvoiceItem(item.id, { notes: e.target.value })}
+                      placeholder="Additional details..."
+                      className="tc-inv-input tc-inv-notes-input"
+                    />
+                  </td>
+                  <td className="no-print">
+                    <button
+                      onClick={() => deleteInvoiceItem(item.id)}
+                      className="tc-inv-delete"
+                      title="Delete entry"
+                    >
+                      ✕
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="tc-inv-totals">
+                <td colSpan={2} className="tc-inv-totals-label">TOTAL HOURS</td>
+                <td className="tc-inv-totals-val">{totalInvoiceHours > 0 ? totalInvoiceHours.toFixed(2) : '—'}</td>
+                <td colSpan={2}></td>
+              </tr>
+            </tfoot>
+          </table>
+          <div className="tc-inv-add-row no-print">
+            <button onClick={addInvoiceItem} className="tc-inv-add-btn">+ Add Entry</button>
           </div>
         </div>
 

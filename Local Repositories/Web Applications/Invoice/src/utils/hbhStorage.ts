@@ -20,6 +20,7 @@ export function newTimesheet(employeeName = ''): HBHTimesheet {
     pickupCheck: '',
     signatureDataUrl: '',
     signatureDate: '',
+    invoiceItems: [],
     savedAt: new Date().toISOString(),
   };
 }
