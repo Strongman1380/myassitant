@@ -27,7 +27,7 @@ export function PicaIntegrations() {
 
   const { open } = useAuthKit({
     token: {
-      url: "/api/pica-token",
+      url: `${window.location.origin}/api/pica-token`,
       headers: {},
     },
     onSuccess: (connection) => {

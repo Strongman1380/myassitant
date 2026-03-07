@@ -16,6 +16,7 @@ export default async function handler(req, res) {
     // Fetch relevant memories from Supabase
     let memoryContext = '';
     try {
+      if (!supabase) throw new Error('Supabase not configured');
       const { data: memories } = await supabase
         .from('memories')
         .select('content, category, importance_level')
