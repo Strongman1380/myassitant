@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { HBHTimesheet, HBHInvoiceItem, Day, DAYS } from '../types/hbh';
-import { calcWeek, splitHM, fmtHM } from '../utils/timesheetCalc';
+import { calcWeek, calcDay, splitHM, fmtHM } from '../utils/timesheetCalc';
 import { SignaturePad } from './SignaturePad';
 import './HBHTimesheetEditor.css';
 
@@ -42,12 +42,41 @@ function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
+/** Given the Sunday "week ending" date string (YYYY-MM-DD), return the Monday date string */
+function getWeekMonday(weekEndingSunday: string): string {
+  const d = new Date(weekEndingSunday + 'T00:00:00');
+  d.setDate(d.getDate() - 6); // Sunday minus 6 = Monday
+  return d.toISOString().slice(0, 10);
+}
+
+/** Map a YYYY-MM-DD date to the Day key (monday..sunday) based on the week-ending Sunday */
+function dateToDayKey(dateStr: string, weekEndingSunday: string): Day | null {
+  const monday = new Date(getWeekMonday(weekEndingSunday) + 'T00:00:00');
+  const target = new Date(dateStr + 'T00:00:00');
+  const diff = Math.round((target.getTime() - monday.getTime()) / (1000 * 60 * 60 * 24));
+  if (diff < 0 || diff > 6) return null;
+  return DAYS[diff]; // DAYS = [monday, tuesday, ..., sunday]
+}
+
 export function HBHTimesheetEditor({ ts, onChange, onSave, onBack }: Props) {
   const printRef = useRef<HTMLDivElement>(null);
   const calc = calcWeek(ts.days);
 
   // Ensure invoiceItems exists for older saved timesheets
   const invoiceItems = ts.invoiceItems || [];
+
+  // Compute Mon–Sun date range from week-ending Sunday
+  const weekMonday = ts.weekEndingDate ? getWeekMonday(ts.weekEndingDate) : '';
+  const weekSunday = ts.weekEndingDate || '';
+
+  /** Look up total worked hours for a given YYYY-MM-DD date from the timesheet grid */
+  function hoursForDate(dateStr: string): number {
+    if (!ts.weekEndingDate || !dateStr) return 0;
+    const dayKey = dateToDayKey(dateStr, ts.weekEndingDate);
+    if (!dayKey) return 0;
+    const { workedMinutes } = calcDay(ts.days[dayKey]);
+    return Math.round((workedMinutes / 60) * 100) / 100;
+  }
 
   function addInvoiceItem() {
     const newItem: HBHInvoiceItem = {
@@ -61,9 +90,15 @@ export function HBHTimesheetEditor({ ts, onChange, onSave, onBack }: Props) {
   }
 
   function updateInvoiceItem(id: string, patch: Partial<HBHInvoiceItem>) {
-    const items = invoiceItems.map(item =>
-      item.id === id ? { ...item, ...patch } : item
-    );
+    const items = invoiceItems.map(item => {
+      if (item.id !== id) return item;
+      const updated = { ...item, ...patch };
+      // Auto-populate hours when a date is selected
+      if ('date' in patch && patch.date) {
+        updated.hours = hoursForDate(patch.date);
+      }
+      return updated;
+    });
     onChange({ ...ts, invoiceItems: items });
   }
 
@@ -367,10 +402,11 @@ export function HBHTimesheetEditor({ ts, onChange, onSave, onBack }: Props) {
                 <tr key={item.id}>
                   <td>
                     <input
-                      type="text"
+                      type="date"
                       value={item.date}
                       onChange={e => updateInvoiceItem(item.id, { date: e.target.value })}
-                      placeholder="MM/DD/YYYY"
+                      min={weekMonday}
+                      max={weekSunday}
                       className="tc-inv-input tc-inv-date-input"
                     />
                   </td>
