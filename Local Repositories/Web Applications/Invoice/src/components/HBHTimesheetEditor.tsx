@@ -426,9 +426,10 @@ export function HBHTimesheetEditor({ ts, onChange, onSave, onBack }: Props) {
                         }
                       }}
                       placeholder="What did you do?"
-                      className="tc-inv-input tc-inv-desc-input"
+                      className="tc-inv-input tc-inv-desc-input no-print"
                       rows={1}
                     />
+                    <span className="tc-inv-desc-print print-only">{item.description}</span>
                   </td>
                   <td>
                     <input

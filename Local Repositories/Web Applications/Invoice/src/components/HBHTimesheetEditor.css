@@ -431,6 +431,10 @@ textarea.tc-inv-input {
   table-layout: fixed;
 }
 
+.tc-inv-desc-print {
+  display: none;
+}
+
 .tc-inv-hrs-input {
   text-align: center;
   font-weight: 700;
@@ -585,11 +589,13 @@ textarea.tc-inv-input {
     padding: 2px !important;
   }
 
-  textarea.tc-inv-input {
-    overflow: visible !important;
-    height: auto !important;
-    white-space: pre-wrap !important;
-    word-wrap: break-word !important;
+  .tc-inv-desc-print {
+    display: block !important;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    padding: 2px;
   }
 
   .tc-invoice-table tr {
