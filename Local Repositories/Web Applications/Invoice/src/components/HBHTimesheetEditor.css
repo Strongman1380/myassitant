@@ -585,6 +585,22 @@ textarea.tc-inv-input {
     padding: 2px !important;
   }
 
+  textarea.tc-inv-input {
+    overflow: visible !important;
+    height: auto !important;
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+  }
+
+  .tc-invoice-table tr {
+    page-break-inside: avoid;
+  }
+
+  .tc-invoice {
+    page-break-before: auto;
+    page-break-inside: auto !important;
+  }
+
   .tc-inv-totals {
     background: #f5f5f5 !important;
   }
