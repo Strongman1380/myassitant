@@ -418,6 +418,13 @@
   background: #f0f7ff;
 }
 
+textarea.tc-inv-input {
+  resize: none;
+  overflow: hidden;
+  line-height: 1.4;
+  min-height: 28px;
+}
+
 .tc-inv-hrs-input {
   text-align: center;
   font-weight: 700;

@@ -411,12 +411,23 @@ export function HBHTimesheetEditor({ ts, onChange, onSave, onBack }: Props) {
                     />
                   </td>
                   <td>
-                    <input
-                      type="text"
+                    <textarea
                       value={item.description}
                       onChange={e => updateInvoiceItem(item.id, { description: e.target.value })}
+                      onInput={e => {
+                        const el = e.target as HTMLTextAreaElement;
+                        el.style.height = 'auto';
+                        el.style.height = el.scrollHeight + 'px';
+                      }}
+                      ref={el => {
+                        if (el && item.description) {
+                          el.style.height = 'auto';
+                          el.style.height = el.scrollHeight + 'px';
+                        }
+                      }}
                       placeholder="What did you do?"
                       className="tc-inv-input tc-inv-desc-input"
+                      rows={1}
                     />
                   </td>
                   <td>
