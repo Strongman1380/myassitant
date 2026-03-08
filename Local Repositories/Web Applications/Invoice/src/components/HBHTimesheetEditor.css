@@ -397,8 +397,8 @@
   padding: 8px 6px;
 }
 
-.tc-inv-date { width: 100px; }
-.tc-inv-desc { }
+.tc-inv-date { width: 110px; }
+.tc-inv-desc { max-width: 500px; }
 .tc-inv-hrs { width: 70px; text-align: center; }
 .tc-inv-notes { width: 200px; }
 .tc-inv-actions { width: 50px; text-align: center; }
@@ -423,6 +423,12 @@ textarea.tc-inv-input {
   overflow: hidden;
   line-height: 1.4;
   min-height: 28px;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.tc-invoice-table {
+  table-layout: fixed;
 }
 
 .tc-inv-hrs-input {
