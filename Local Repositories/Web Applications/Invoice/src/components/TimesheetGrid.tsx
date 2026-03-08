@@ -2,17 +2,102 @@ import React, { useState } from 'react';
 import { Timesheet, TimesheetEntry, InvoiceItem } from '../types';
 import './TimesheetGrid.css';
 
-const BILLING_CODES = [
-  'Database Development',
-  'Intake Paperwork Development',
-  'Website Development',
-  'Revenue Plan',
-  'Staff Meeting',
-  'Case Management',
-  'Administrative',
-  'Training',
-  'Other',
+// Nebraska Medicaid billing codes – valid across Fee-for-Service,
+// Nebraska Total Care, Healthy Blue Nebraska, and UnitedHealthcare Community Plan
+const BILLING_CODE_GROUPS: { label: string; codes: { code: string; desc: string }[] }[] = [
+  {
+    label: 'Evaluation & Assessment',
+    codes: [
+      { code: '90791', desc: 'Psychiatric Diagnostic Evaluation' },
+      { code: '90792', desc: 'Psychiatric Diagnostic Eval w/ Medical Services' },
+      { code: 'H0001', desc: 'Alcohol and/or Drug Assessment' },
+      { code: 'H0031', desc: 'Mental Health Assessment' },
+      { code: '96130', desc: 'Psychological Testing Evaluation (first hour)' },
+      { code: '96131', desc: 'Psychological Testing Evaluation (add\'l hour)' },
+    ],
+  },
+  {
+    label: 'Individual Therapy',
+    codes: [
+      { code: '90832', desc: 'Psychotherapy – 30 min' },
+      { code: '90834', desc: 'Psychotherapy – 45 min' },
+      { code: '90837', desc: 'Psychotherapy – 60 min' },
+    ],
+  },
+  {
+    label: 'Family & Group Therapy',
+    codes: [
+      { code: '90846', desc: 'Family Psychotherapy w/o Patient' },
+      { code: '90847', desc: 'Family Psychotherapy w/ Patient' },
+      { code: '90853', desc: 'Group Psychotherapy' },
+    ],
+  },
+  {
+    label: 'Crisis Services',
+    codes: [
+      { code: 'H2011', desc: 'Crisis Intervention – per 15 min' },
+      { code: 'S9484', desc: 'Crisis Intervention Mental Health – per hour' },
+      { code: '90839', desc: 'Psychotherapy for Crisis – first 60 min' },
+      { code: '90840', desc: 'Psychotherapy for Crisis – add\'l 30 min' },
+    ],
+  },
+  {
+    label: 'Case Management',
+    codes: [
+      { code: 'T1016', desc: 'Case Management – per 15 min' },
+      { code: 'T1017', desc: 'Targeted Case Management – per 15 min' },
+    ],
+  },
+  {
+    label: 'Community Support & Rehabilitation',
+    codes: [
+      { code: 'H0036', desc: 'Community Psychiatric Supportive Treatment – per 15 min' },
+      { code: 'H0046', desc: 'Mental Health Services, NOS' },
+      { code: 'H2015', desc: 'Comprehensive Community Support Services – per 15 min' },
+      { code: 'H2017', desc: 'Psychosocial Rehabilitation Services – per 15 min' },
+      { code: 'T2038', desc: 'Community Transition Service – per 15 min' },
+    ],
+  },
+  {
+    label: 'Substance Use / Co-Occurring',
+    codes: [
+      { code: 'H0004', desc: 'Behavioral Health Counseling & Therapy – per 15 min' },
+      { code: 'H0005', desc: 'Alcohol and/or Drug Services – Group – per 15 min' },
+      { code: 'H0015', desc: 'Alcohol and/or Drug Services – Intensive Outpatient' },
+      { code: 'H2035', desc: 'Alcohol/Drug Treatment Program – per hour' },
+    ],
+  },
+  {
+    label: 'Medication Management',
+    codes: [
+      { code: '99213', desc: 'E&M Office Visit – Established (Low complexity)' },
+      { code: '99214', desc: 'E&M Office Visit – Established (Moderate complexity)' },
+      { code: '99215', desc: 'E&M Office Visit – Established (High complexity)' },
+    ],
+  },
+  {
+    label: 'Add-On / Modifier Codes',
+    codes: [
+      { code: '90785', desc: 'Interactive Complexity Add-On' },
+      { code: '90833', desc: 'Psychotherapy Add-On – 30 min (w/ E&M)' },
+      { code: '90836', desc: 'Psychotherapy Add-On – 45 min (w/ E&M)' },
+      { code: '90838', desc: 'Psychotherapy Add-On – 60 min (w/ E&M)' },
+    ],
+  },
+  {
+    label: 'Telehealth / Other',
+    codes: [
+      { code: '90791-95', desc: 'Psych Eval via Telehealth (modifier 95)' },
+      { code: '90834-95', desc: 'Psychotherapy 45 min via Telehealth (modifier 95)' },
+      { code: '90837-95', desc: 'Psychotherapy 60 min via Telehealth (modifier 95)' },
+      { code: 'T1013', desc: 'Sign Language / Oral Interpreter – per 15 min' },
+    ],
+  },
 ];
+
+// Flat list for quick lookup
+const BILLING_CODES = BILLING_CODE_GROUPS.flatMap(g => g.codes.map(c => `${c.code} – ${c.desc}`));
+BILLING_CODES.push('Other');
 
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -203,9 +288,15 @@ export function TimesheetGrid({ timesheet, onUpdate }: TimesheetGridProps) {
                       className="ts-select"
                     >
                       <option value="">Select...</option>
-                      {BILLING_CODES.map(code => (
-                        <option key={code} value={code}>{code}</option>
+                      {BILLING_CODE_GROUPS.map(group => (
+                        <optgroup key={group.label} label={group.label}>
+                          {group.codes.map(c => {
+                            const val = `${c.code} – ${c.desc}`;
+                            return <option key={val} value={val}>{c.code} – {c.desc}</option>;
+                          })}
+                        </optgroup>
                       ))}
+                      <option value="Other">Other</option>
                     </select>
                     {(!BILLING_CODES.includes(entry.billing_code) || entry.billing_code === 'Other') && (
                       <input
@@ -363,20 +454,30 @@ export function TimesheetGrid({ timesheet, onUpdate }: TimesheetGridProps) {
                 <tr key={item.id}>
                   <td>
                     <input
-                      type="text"
+                      type="date"
                       value={item.date}
                       onChange={e => updateInvoiceItem(item.id, { date: e.target.value })}
-                      placeholder="MM/DD/YYYY"
                       className="ts-input ts-date"
                     />
                   </td>
                   <td>
-                    <input
-                      type="text"
+                    <textarea
                       value={item.description}
                       onChange={e => updateInvoiceItem(item.id, { description: e.target.value })}
+                      onInput={e => {
+                        const el = e.target as HTMLTextAreaElement;
+                        el.style.height = 'auto';
+                        el.style.height = el.scrollHeight + 'px';
+                      }}
+                      ref={el => {
+                        if (el && item.description) {
+                          el.style.height = 'auto';
+                          el.style.height = el.scrollHeight + 'px';
+                        }
+                      }}
                       placeholder="Describe the service performed..."
                       className="ts-input ts-description"
+                      rows={1}
                     />
                   </td>
                   <td>

@@ -32,7 +32,7 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
-  min-width: 900px;
+  min-width: 1100px;
 }
 
 .ts-table thead th {
@@ -139,7 +139,16 @@
 .ts-client      { width: 180px; }
 .ts-mileage     { width: 70px; text-align: center; }
 .ts-notes       { width: 100%; }
-.ts-description { width: 100%; }
+.ts-description {
+  width: 100%;
+}
+
+textarea.ts-description {
+  resize: none;
+  overflow: hidden;
+  line-height: 1.4;
+  min-height: 28px;
+}
 .ts-qty         { width: 60px; text-align: center; }
 .ts-rate        { width: 80px; text-align: center; }
 .ts-amount-display { font-weight: 600; color: #1a1a2e; font-size: 13px; }
